@@ -9,6 +9,10 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 // @ts-ignore: Unused imports
 import * as store$0 from "../store/models.js";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as $models from "./models.js";
+
 export function DeleteProvider(id: string): $CancellablePromise<void> {
     return $Call.ByID(9403289, id);
 }
@@ -23,4 +27,11 @@ export function SaveProvider(provider: store$0.ProviderConfig, apiKey: string): 
 
 export function SetActiveProvider(id: string): $CancellablePromise<void> {
     return $Call.ByID(2976708910, id);
+}
+
+/**
+ * TestProvider 用当前表单内容发一条最小请求，验证地址、模型与 Key 是否可用。
+ */
+export function TestProvider(provider: store$0.ProviderConfig, apiKey: string): $CancellablePromise<$models.ProviderTestResult> {
+    return $Call.ByID(3233189610, provider, apiKey);
 }

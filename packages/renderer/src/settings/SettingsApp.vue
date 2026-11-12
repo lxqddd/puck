@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import type { ProviderConfig, Settings } from '@puck/contract'
+import type { ProviderConfig, ProviderTestResult, Settings } from '@puck/contract'
 import { bridge } from '../bridge'
 
 interface Draft {
@@ -28,8 +28,10 @@ const draft = ref<Draft>(emptyDraft())
 const apiKey = ref('')
 const loading = ref(true)
 const saving = ref(false)
+const testing = ref(false)
 const saved = ref(false)
 const errorText = ref('')
+const testResult = ref<ProviderTestResult | null>(null)
 
 const providers = computed(() => settings.value.providers ?? [])
 const isExisting = computed(() => providers.value.some((provider) => provider.id === draft.value.id))
@@ -59,12 +61,14 @@ function edit(provider: ProviderConfig) {
   }
   apiKey.value = ''
   errorText.value = ''
+  testResult.value = null
 }
 
 function addProvider() {
   draft.value = emptyDraft()
   apiKey.value = ''
   errorText.value = ''
+  testResult.value = null
 }
 
 function onTypeChange() {
@@ -92,6 +96,34 @@ async function load() {
   }
 }
 
+function draftProvider(): ProviderConfig {
+  return {
+    id: draft.value.id,
+    name: draft.value.name.trim() || draft.value.model.trim() || '未命名供应商',
+    type: draft.value.type,
+    baseURL: draft.value.baseURL.trim(),
+    model: draft.value.model.trim(),
+    hasKey: draft.value.hasKey,
+  }
+}
+
+async function testConnection() {
+  testing.value = true
+  testResult.value = null
+  errorText.value = ''
+  try {
+    testResult.value = await bridge.testProvider(draftProvider(), apiKey.value)
+  } catch (error) {
+    testResult.value = {
+      ok: false,
+      message: error instanceof Error ? error.message : String(error),
+      latencyMs: 0,
+    }
+  } finally {
+    testing.value = false
+  }
+}
+
 async function save() {
   if (!draft.value.model.trim()) {
     errorText.value = '请填写模型'
@@ -106,15 +138,7 @@ async function save() {
   errorText.value = ''
   saved.value = false
   try {
-    const provider: ProviderConfig = {
-      id: draft.value.id,
-      name: draft.value.name.trim() || draft.value.model.trim() || '未命名供应商',
-      type: draft.value.type,
-      baseURL: draft.value.baseURL.trim(),
-      model: draft.value.model.trim(),
-      hasKey: draft.value.hasKey,
-    }
-    const savedProvider = await bridge.saveProvider(provider, apiKey.value)
+    const savedProvider = await bridge.saveProvider(draftProvider(), apiKey.value)
     apiKey.value = ''
     const fresh = await bridge.getSettings()
     settings.value = fresh
@@ -248,6 +272,9 @@ onMounted(async () => {
           <button type="submit" class="primary" :disabled="saving">
             {{ saving ? '保存中…' : isExisting ? '保存供应商' : '添加供应商' }}
           </button>
+          <button type="button" class="secondary" :disabled="testing" @click="testConnection">
+            {{ testing ? '测试中…' : '测试连接' }}
+          </button>
           <button
             v-if="draft.id"
             type="button"
@@ -258,6 +285,14 @@ onMounted(async () => {
           </button>
           <span v-if="saved" class="saved">已保存</span>
         </div>
+
+        <p v-if="testResult" class="test-result" :class="{ ok: testResult.ok }">
+          {{
+            testResult.ok
+              ? `${testResult.message} · ${testResult.latencyMs} ms`
+              : testResult.message
+          }}
+        </p>
 
         <p v-if="errorText" class="error">{{ errorText }}</p>
       </form>

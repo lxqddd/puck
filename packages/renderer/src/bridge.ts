@@ -8,6 +8,7 @@ import type {
   Conversation,
   MascotScaleEvent,
   ProviderConfig,
+  ProviderTestResult,
   SendResult,
   Settings,
   StoredMessage,
@@ -54,6 +55,8 @@ export const bridge = {
   },
   saveProvider: (provider: ProviderConfig, apiKey: string): Promise<ProviderConfig> =>
     SettingsService.SaveProvider(provider, apiKey),
+  testProvider: (provider: ProviderConfig, apiKey: string): Promise<ProviderTestResult> =>
+    SettingsService.TestProvider(provider, apiKey),
   deleteProvider: (id: string) => SettingsService.DeleteProvider(id),
   setActiveProvider: (id: string) => SettingsService.SetActiveProvider(id),
 

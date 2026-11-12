@@ -209,6 +209,41 @@ body.settings-body {
   cursor: default;
 }
 
+.secondary {
+  padding: 11px 18px;
+  border: 1px solid rgba(63, 201, 165, 0.5);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--puck-mint-deep);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondary:hover {
+  background: rgba(63, 201, 165, 0.1);
+}
+
+.secondary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.test-result {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255, 143, 143, 0.16);
+  color: #9a3535;
+  font-size: 12px;
+  word-break: break-word;
+}
+
+.test-result.ok {
+  background: rgba(63, 201, 165, 0.14);
+  color: var(--puck-mint-deep);
+}
+
 .danger {
   padding: 11px 18px;
   border: 1px solid rgba(154, 53, 53, 0.35);

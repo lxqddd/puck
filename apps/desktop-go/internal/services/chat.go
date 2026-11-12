@@ -211,26 +211,11 @@ func providerFor(settings store.Settings, keys *secure.Keys) (ai.Provider, strin
 	if config == nil {
 		return &ai.EchoProvider{}, "", nil
 	}
-	if strings.TrimSpace(config.Model) == "" {
-		return nil, "", fmt.Errorf("请先在设置里为「%s」填写模型", config.Name)
-	}
 
 	key, _ := keys.Get(config.ID)
-	switch config.Type {
-	case store.ProviderTypeAnthropic:
-		if key == "" {
-			return nil, "", fmt.Errorf("请先为「%s」配置 Anthropic API Key", config.Name)
-		}
-		return &ai.AnthropicProvider{APIKey: key, BaseURL: config.BaseURL, Model: config.Model}, config.Model, nil
-	case store.ProviderTypeGemini:
-		if key == "" {
-			return nil, "", fmt.Errorf("请先为「%s」配置 Gemini API Key", config.Name)
-		}
-		return &ai.GeminiProvider{APIKey: key, BaseURL: config.BaseURL, Model: config.Model}, config.Model, nil
-	default:
-		if strings.TrimSpace(config.BaseURL) == "" {
-			return nil, "", fmt.Errorf("请先为「%s」填写服务地址", config.Name)
-		}
-		return &ai.OpenAICompatible{BaseURL: config.BaseURL, APIKey: key}, config.Model, nil
+	provider, model, err := buildProvider(*config, key)
+	if err != nil {
+		return nil, "", fmt.Errorf("「%s」%w", config.Name, err)
 	}
+	return provider, model, nil
 }

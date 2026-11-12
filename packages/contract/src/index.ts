@@ -52,6 +52,12 @@ export interface Settings {
   mascotScale: number
 }
 
+export interface ProviderTestResult {
+  ok: boolean
+  message: string
+  latencyMs: number
+}
+
 export interface Conversation {
   id: string
   title: string

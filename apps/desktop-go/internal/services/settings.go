@@ -1,12 +1,24 @@
 package services
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strings"
+	"time"
 
+	"puck/internal/ai"
 	"puck/internal/secure"
 	"puck/internal/store"
 )
+
+type ProviderTestResult struct {
+	OK        bool   `json:"ok"`
+	Message   string `json:"message"`
+	LatencyMs int64  `json:"latencyMs"`
+}
+
+var errTestComplete = errors.New("provider test complete")
 
 type SettingsService struct {
 	store *store.SettingsStore
@@ -124,4 +136,44 @@ func (s *SettingsService) DeleteProvider(id string) error {
 		return err
 	}
 	return s.keys.Delete(id)
+}
+
+// TestProvider 用当前表单内容发一条最小请求，验证地址、模型与 Key 是否可用。
+func (s *SettingsService) TestProvider(provider store.ProviderConfig, apiKey string) ProviderTestResult {
+	key := strings.TrimSpace(apiKey)
+	if key == "" && strings.TrimSpace(provider.ID) != "" {
+		key, _ = s.keys.Get(strings.TrimSpace(provider.ID))
+	}
+
+	chatProvider, model, err := buildProvider(provider, key)
+	if err != nil {
+		return ProviderTestResult{OK: false, Message: err.Error()}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	start := time.Now()
+	received := false
+	err = chatProvider.Chat(ctx, ai.ChatRequest{
+		Model:    model,
+		Messages: []ai.Message{{Role: ai.RoleUser, Content: "只回复 OK"}},
+	}, func(event ai.ChatEvent) error {
+		if event.Type == ai.EventDelta && strings.TrimSpace(event.Text) != "" {
+			received = true
+			return errTestComplete
+		}
+		return nil
+	})
+	latency := time.Since(start).Milliseconds()
+	if received {
+		return ProviderTestResult{OK: true, Message: "连接成功", LatencyMs: latency}
+	}
+	if err != nil && !errors.Is(err, errTestComplete) {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return ProviderTestResult{OK: false, Message: "连接超时（20 秒）"}
+		}
+		return ProviderTestResult{OK: false, Message: err.Error()}
+	}
+	return ProviderTestResult{OK: false, Message: "模型没有返回内容"}
 }

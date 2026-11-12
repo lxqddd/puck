@@ -12,5 +12,6 @@ export {
 
 export type {
     Position,
+    ProviderTestResult,
     SendResult
 } from "./models.js";

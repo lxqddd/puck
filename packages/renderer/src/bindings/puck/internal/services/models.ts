@@ -6,6 +6,12 @@ export interface Position {
     "y": number;
 }
 
+export interface ProviderTestResult {
+    "ok": boolean;
+    "message": string;
+    "latencyMs": number;
+}
+
 export interface SendResult {
     "messageId": string;
     "conversationId": string;
