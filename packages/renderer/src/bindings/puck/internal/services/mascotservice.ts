@@ -17,12 +17,20 @@ export function Attach(windows: shell$0.Windows | null): $CancellablePromise<voi
     return $Call.ByID(2228157548, windows);
 }
 
+export function GetBubbleState(): $CancellablePromise<shell$0.BubbleState> {
+    return $Call.ByID(2830688982);
+}
+
 export function GetPosition(): $CancellablePromise<$models.Position> {
     return $Call.ByID(275317980);
 }
 
 export function GetScale(): $CancellablePromise<number> {
     return $Call.ByID(1974440415);
+}
+
+export function HideBubble(): $CancellablePromise<void> {
+    return $Call.ByID(2569685167);
 }
 
 export function OpenChat(): $CancellablePromise<void> {
@@ -55,4 +63,8 @@ export function SetPosition(x: number, y: number): $CancellablePromise<void> {
 
 export function SetScale(scale: number): $CancellablePromise<number> {
     return $Call.ByID(1609326211, scale);
+}
+
+export function ShowBubble(text: string, durationMs: number): $CancellablePromise<void> {
+    return $Call.ByID(3303480058, text, durationMs);
 }

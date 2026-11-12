@@ -1,0 +1,85 @@
+body.bubble-body {
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+}
+
+.bubble-stage {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0 12px;
+}
+
+.bubble-stage-left {
+  justify-content: flex-end;
+}
+
+.bubble-stage-right {
+  justify-content: flex-start;
+}
+
+.puck-bubble {
+  position: relative;
+  display: -webkit-box;
+  max-width: 220px;
+  max-height: 100px;
+  padding: 10px 14px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--puck-surface);
+  color: var(--puck-ink);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  box-shadow: 0 6px 18px rgba(23, 52, 45, 0.18);
+}
+
+.puck-bubble::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--puck-surface);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+/* 气泡在桌宠左侧时，尾巴指向右侧的桌宠 */
+.puck-bubble-left::after {
+  right: -5px;
+}
+
+/* 气泡在桌宠右侧时，尾巴指向左侧的桌宠 */
+.puck-bubble-right::after {
+  left: -5px;
+}
+
+html.dark .puck-bubble {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.bubble-pop-enter-active,
+.bubble-pop-leave-active {
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+}
+
+.bubble-pop-enter-from,
+.bubble-pop-leave-to {
+  opacity: 0;
+  transform: translateY(3px) scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .puck-bubble {
+    animation: none !important;
+    transition: none !important;
+  }
+}

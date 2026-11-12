@@ -12,6 +12,7 @@ import type * as events$0 from "../../../../../puck/internal/events/models.js";
 declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
+            "bubble:show": events$0.BubbleShowEvent;
             "chat:delta": events$0.ChatDeltaEvent;
             "chat:done": events$0.ChatDoneEvent;
             "chat:error": events$0.ChatErrorEvent;

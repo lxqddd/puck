@@ -4,6 +4,7 @@ import (
 	"log"
 	"math"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -24,17 +25,38 @@ const (
 	mascotMinScale     = 0.5
 	mascotMaxScale     = 1.5
 	mascotScaleStep    = 0.1
+
+	bubbleWidth  = 260
+	bubbleHeight = 140
+	bubbleMargin = 8
+
+	// 桌宠窗口左右各有一段透明留白：SVG viewBox 宽 240，身体横向约占 x=46..194。
+	mascotBodyInsetRatio = 46.0 / 240.0
+	// 气泡尾巴尖端到桌宠身体边缘的视觉间距。
+	bubbleVisibleGap = 6
+	// 气泡窗口边缘到尾巴尖端的距离，需与 bubble.scss 的 12px 内边距和尾巴外伸保持同步。
+	bubbleTailReach = 5
 )
 
 type Windows struct {
 	app          *application.App
 	mascot       *application.WebviewWindow
+	bubble       *application.WebviewWindow
 	controller   *MascotController
 	trayIcon     []byte
 	mu           sync.Mutex // 聊天/设置窗口的创建
+	bubbleMu     sync.Mutex
+	bubbleState  BubbleState
+	bubbleShown  bool
+	bubbleGen    atomic.Uint64
 	scaleMu      sync.Mutex // 缩放状态与持久化回调
 	scale        float64
 	persistScale func(float64)
+}
+
+type BubbleState struct {
+	Text string `json:"text"`
+	Side string `json:"side"`
 }
 
 func NewWindows(app *application.App) *Windows {
@@ -419,7 +441,175 @@ func (w *Windows) ToggleMascot() {
 	}
 	if w.mascot.IsVisible() {
 		w.mascot.Hide()
+		w.HideBubble()
 		return
 	}
 	w.mascot.Show()
+}
+
+// ShowBubble 在桌宠旁边显示一个独立的透明气泡窗口。
+// 气泡固定尺寸，不随桌宠缩放；桌宠位于屏幕右半边时放到左侧，否则放到右侧。
+func (w *Windows) ShowBubble(text string, durationMs int) {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		w.HideBubble()
+		return
+	}
+	if w.mascot == nil {
+		return
+	}
+
+	side, bounds := w.bubblePlacement()
+	bubble := w.ensureBubbleWindow()
+	if bubble == nil {
+		return
+	}
+
+	generation := w.bubbleGen.Add(1)
+	w.bubbleMu.Lock()
+	previousSide := w.bubbleState.Side
+	reposition := !w.bubbleShown || previousSide != side
+	w.bubbleShown = true
+	w.bubbleState = BubbleState{Text: text, Side: side}
+	w.bubbleMu.Unlock()
+
+	if reposition {
+		bubble.SetPosition(bounds.X, bounds.Y)
+		bubble.Show()
+		x, y := w.mascot.Position()
+		width, height := w.mascot.Size()
+		log.Printf("puck: bubble side=%s at (%d,%d), mascot=(%d,%d %dx%d)", side, bounds.X, bounds.Y, x, y, width, height)
+	}
+	if app := application.Get(); app != nil {
+		app.Event.Emit(puckevents.BubbleShow, puckevents.BubbleShowEvent{Text: text, Side: side})
+	}
+
+	if durationMs > 0 {
+		time.AfterFunc(time.Duration(durationMs)*time.Millisecond, func() {
+			if w.bubbleGen.Load() == generation {
+				w.HideBubble()
+			}
+		})
+	}
+}
+
+func (w *Windows) HideBubble() {
+	w.bubbleGen.Add(1)
+	w.bubbleMu.Lock()
+	w.bubbleState = BubbleState{}
+	w.bubbleShown = false
+	shown := w.bubble
+	w.bubbleMu.Unlock()
+	if shown != nil {
+		shown.Hide()
+	}
+}
+
+func (w *Windows) BubbleState() BubbleState {
+	w.bubbleMu.Lock()
+	defer w.bubbleMu.Unlock()
+	return w.bubbleState
+}
+
+func (w *Windows) ensureBubbleWindow() *application.WebviewWindow {
+	w.bubbleMu.Lock()
+	defer w.bubbleMu.Unlock()
+	if w.bubble != nil {
+		return w.bubble
+	}
+	w.bubble = w.app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Name:              "bubble",
+		Title:             "Puck",
+		Width:             bubbleWidth,
+		Height:            bubbleHeight,
+		Hidden:            true,
+		Frameless:         true,
+		AlwaysOnTop:       true,
+		DisableResize:     true,
+		BackgroundType:    application.BackgroundTypeTransparent,
+		BackgroundColour:  application.NewRGBA(0, 0, 0, 0),
+		IgnoreMouseEvents: true,
+		URL:               "/bubble.html",
+		Windows: application.WindowsWindow{
+			HiddenOnTaskbar:                   true,
+			BackdropType:                      application.None,
+			DisableFramelessWindowDecorations: true,
+		},
+		Mac: application.MacWindow{
+			Backdrop:      application.MacBackdropTransparent,
+			DisableShadow: true,
+			CornerType:    application.MacWindowCornerTypeSquare,
+			WindowClass:   application.MacWindowClassPanel,
+			PanelPreferences: application.MacPanelPreferences{
+				NonActivating:          true,
+				BecomesKeyOnlyIfNeeded: true,
+				FloatingPanel:          true,
+			},
+			CollectionBehavior: application.MacWindowCollectionBehaviorCanJoinAllSpaces |
+				application.MacWindowCollectionBehaviorFullScreenAuxiliary |
+				application.MacWindowCollectionBehaviorIgnoresCycle,
+		},
+	})
+	return w.bubble
+}
+
+func (w *Windows) bubblePlacement() (string, application.Rect) {
+	if w.mascot == nil {
+		return bubblePlacement(application.Rect{}, application.Rect{Width: 1920, Height: 1080})
+	}
+	x, y := w.mascot.Position()
+	width, height := w.mascot.Size()
+	mascot := application.Rect{X: x, Y: y, Width: width, Height: height}
+
+	screen := w.app.Screen.GetPrimary()
+	center := application.Point{X: x + width/2, Y: y + height/2}
+	if nearest := w.app.Screen.ScreenNearestDipPoint(center); nearest != nil {
+		screen = nearest
+	}
+	area := application.Rect{Width: 1920, Height: 1080}
+	if screen != nil {
+		area = screen.WorkArea
+	}
+	return bubblePlacement(mascot, area)
+}
+
+// bubblePlacement 根据桌宠可见身体与工作区计算气泡位置，纯函数便于测试。
+func bubblePlacement(mascot, area application.Rect) (string, application.Rect) {
+	inset := int(math.Round(float64(mascot.Width) * mascotBodyInsetRatio))
+	visibleLeft := mascot.X + inset
+	visibleRight := mascot.X + mascot.Width - inset
+
+	side := "right"
+	x := visibleRight + bubbleVisibleGap - bubbleTailReach
+	if mascot.X+mascot.Width/2 >= area.X+area.Width/2 {
+		side = "left"
+		x = visibleLeft - bubbleVisibleGap - bubbleWidth + bubbleTailReach
+	}
+	y := mascot.Y + int(float64(mascot.Height)*0.35) - bubbleHeight/2
+
+	minX := area.X + bubbleMargin
+	maxX := area.X + area.Width - bubbleWidth - bubbleMargin
+	if maxX < minX {
+		maxX = minX
+	}
+	if x < minX {
+		x = minX
+	}
+	if x > maxX {
+		x = maxX
+	}
+
+	minY := area.Y + bubbleMargin
+	maxY := area.Y + area.Height - bubbleHeight - bubbleMargin
+	if maxY < minY {
+		maxY = minY
+	}
+	if y < minY {
+		y = minY
+	}
+	if y > maxY {
+		y = maxY
+	}
+
+	return side, application.Rect{X: x, Y: y, Width: bubbleWidth, Height: bubbleHeight}
 }

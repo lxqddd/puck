@@ -9,6 +9,7 @@ const (
 	ChatState    = "chat:state"
 	MascotScale  = "mascot:scale"
 	ThemeChanged = "theme:changed"
+	BubbleShow   = "bubble:show"
 )
 
 type ChatDeltaEvent struct {
@@ -41,6 +42,11 @@ type ThemeChangedEvent struct {
 	Theme string `json:"theme"`
 }
 
+type BubbleShowEvent struct {
+	Text string `json:"text"`
+	Side string `json:"side"`
+}
+
 func Register() {
 	application.RegisterEvent[ChatDeltaEvent](ChatDelta)
 	application.RegisterEvent[ChatDoneEvent](ChatDone)
@@ -48,4 +54,5 @@ func Register() {
 	application.RegisterEvent[ChatStateEvent](ChatState)
 	application.RegisterEvent[MascotScaleEvent](MascotScale)
 	application.RegisterEvent[ThemeChangedEvent](ThemeChanged)
+	application.RegisterEvent[BubbleShowEvent](BubbleShow)
 }

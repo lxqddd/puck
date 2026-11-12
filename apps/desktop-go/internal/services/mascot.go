@@ -48,7 +48,33 @@ func (s *MascotService) SetDragging(dragging bool) {
 	if s.windows == nil {
 		return
 	}
+	if dragging {
+		s.windows.HideBubble()
+	}
 	s.windows.Controller().SetDragging(dragging)
+}
+
+func (s *MascotService) ShowBubble(text string, durationMs int) {
+	if s.windows == nil {
+		return
+	}
+	s.windows.ShowBubble(text, durationMs)
+}
+
+func (s *MascotService) HideBubble() {
+	if s.windows == nil {
+		return
+	}
+	s.windows.HideBubble()
+}
+
+func (s *MascotService) GetBubbleState() shell.BubbleState {
+	if s.windows == nil {
+		return shell.BubbleState{}
+	}
+	state := s.windows.BubbleState()
+	log.Printf("puck: bubble page requested state text=%d side=%s", len([]rune(state.Text)), state.Side)
+	return state
 }
 
 func (s *MascotService) GetPosition() Position {

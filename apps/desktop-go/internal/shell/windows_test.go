@@ -79,3 +79,70 @@ func TestBottomRightPosition(t *testing.T) {
 		})
 	}
 }
+
+func TestBubblePlacement(t *testing.T) {
+	area := application.Rect{X: 0, Y: 30, Width: 1792, Height: 1090}
+	cases := []struct {
+		name     string
+		mascot   application.Rect
+		area     application.Rect
+		wantSide string
+		wantX    int
+		wantY    int
+	}{
+		{
+			name:     "mascot on right half puts bubble on the left",
+			mascot:   application.Rect{X: 1596, Y: 886, Width: 179, Height: 209},
+			area:     area,
+			wantSide: "left",
+			wantX:    1369,
+			wantY:    889,
+		},
+		{
+			name:     "mascot on left half puts bubble on the right",
+			mascot:   application.Rect{X: 40, Y: 500, Width: 179, Height: 210},
+			area:     area,
+			wantSide: "right",
+			wantX:    186,
+			wantY:    503,
+		},
+		{
+			name:     "bubble clamps inside a small work area",
+			mascot:   application.Rect{X: 0, Y: 0, Width: 180, Height: 210},
+			area:     application.Rect{Width: 300, Height: 300},
+			wantSide: "right",
+			wantX:    32,
+			wantY:    8,
+		},
+		{
+			name:     "negative origin on a left-side display",
+			mascot:   application.Rect{X: -2440, Y: 600, Width: 180, Height: 210},
+			area:     application.Rect{X: -2560, Y: 0, Width: 2560, Height: 1440},
+			wantSide: "right",
+			wantX:    -2294,
+			wantY:    603,
+		},
+		{
+			name:     "visual gap stays tight at 1.5x scale",
+			mascot:   application.Rect{X: 1200, Y: 500, Width: 540, Height: 630},
+			area:     area,
+			wantSide: "left",
+			wantX:    1043,
+			wantY:    650,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			side, bounds := bubblePlacement(tc.mascot, tc.area)
+			if side != tc.wantSide {
+				t.Fatalf("bubblePlacement() side = %q, want %q", side, tc.wantSide)
+			}
+			if bounds.X != tc.wantX || bounds.Y != tc.wantY {
+				t.Fatalf("bubblePlacement() = (%d,%d), want (%d,%d)", bounds.X, bounds.Y, tc.wantX, tc.wantY)
+			}
+			if bounds.Width != bubbleWidth || bounds.Height != bubbleHeight {
+				t.Fatalf("bubblePlacement() size = %dx%d, want %dx%d", bounds.Width, bounds.Height, bubbleWidth, bubbleHeight)
+			}
+		})
+	}
+}

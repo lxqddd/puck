@@ -1,6 +1,8 @@
 import { Events } from '@wailsio/runtime'
 import { EVENTS } from '@puck/contract'
 import type {
+  BubbleShowEvent,
+  BubbleState,
   ChatDeltaEvent,
   ChatDoneEvent,
   ChatErrorEvent,
@@ -35,6 +37,10 @@ export const bridge = {
   setPosition: (x: number, y: number) => MascotService.SetPosition(x, y),
   getScale: (): Promise<number> => MascotService.GetScale(),
   scaleBy: (delta: number): Promise<number> => MascotService.ScaleBy(delta),
+  showBubble: (text: string, durationMs: number) => MascotService.ShowBubble(text, durationMs),
+  hideBubble: () => MascotService.HideBubble(),
+  getBubbleState: async (): Promise<BubbleState> =>
+    (await MascotService.GetBubbleState()) as BubbleState,
 
   setPersona: (prompt: string) => ChatService.SetPersona(prompt),
   sendChat: (text: string, conversationId: string, providerId: string): Promise<SendResult> =>
@@ -74,4 +80,6 @@ export const bridge = {
     subscribe(EVENTS.mascotScale, callback),
   onThemeChanged: (callback: (event: ThemeChangedEvent) => void) =>
     subscribe(EVENTS.themeChanged, callback),
+  onBubbleShow: (callback: (event: BubbleShowEvent) => void) =>
+    subscribe(EVENTS.bubbleShow, callback),
 }

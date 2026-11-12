@@ -7,15 +7,13 @@ import { bridge } from '../bridge'
 import { characterManifest, characterPack, persona } from '../character'
 
 const stage = ref<HTMLElement | null>(null)
-const bubble = ref('')
-const bubbleVisible = ref(false)
 const scale = ref(1)
 
 let runtime: AvatarRuntime | null = null
 let tickTimer: number | undefined
-let bubbleTimer: number | undefined
 let lipTimer: number | undefined
 let streamed = ''
+let lastPreviewAt = 0
 const unsubscribers: Array<() => void> = []
 
 interface DragState {
@@ -33,12 +31,7 @@ function randomFrom(items: string[], fallback: string): string {
 }
 
 function showBubble(text: string, ms: number) {
-  bubble.value = text
-  bubbleVisible.value = true
-  window.clearTimeout(bubbleTimer)
-  bubbleTimer = window.setTimeout(() => {
-    bubbleVisible.value = false
-  }, ms)
+  void bridge.showBubble(text, ms).catch(() => {})
 }
 
 function reportHitRegion(attempt = 0) {
@@ -203,26 +196,25 @@ onMounted(async () => {
       if (event.state === 'speaking') startLipSync()
       else stopLipSync()
       if (event.state === 'thinking') showBubble('让我想想…', 60_000)
-      if (event.state === 'idle') {
-        window.clearTimeout(bubbleTimer)
-        bubbleTimer = window.setTimeout(() => {
-          bubbleVisible.value = false
-        }, 2600)
-      }
     }),
     bridge.onChatDelta((event) => {
       streamed += event.text
+      const now = performance.now()
+      if (now - lastPreviewAt < 300) return
+      lastPreviewAt = now
       const preview = streamed.length > 72 ? `${streamed.slice(0, 72)}…` : streamed
       showBubble(preview, 60_000)
     }),
-    bridge.onChatDone(() => {
+    bridge.onChatDone((event) => {
       streamed = ''
-      showBubble(bubble.value, 4200)
+      lastPreviewAt = 0
+      showBubble(event.text || '收到回复了。', 4200)
       runtime?.setEmotion('happy')
       window.setTimeout(() => runtime?.setEmotion('neutral'), 1800)
     }),
     bridge.onChatError(() => {
       streamed = ''
+      lastPreviewAt = 0
       runtime?.setEmotion('sad')
       showBubble('唔，出了点问题。', 3600)
       window.setTimeout(() => runtime?.setEmotion('neutral'), 2200)
@@ -237,7 +229,6 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.clearInterval(tickTimer)
-  window.clearTimeout(bubbleTimer)
   stopLipSync()
   window.removeEventListener('resize', onResize)
   window.removeEventListener('wheel', onWheel)
@@ -342,9 +333,5 @@ onBeforeUnmount(() => {
         </g>
       </svg>
     </div>
-
-    <transition name="bubble">
-      <div v-if="bubbleVisible" class="bubble">{{ bubble }}</div>
-    </transition>
   </div>
 </template>

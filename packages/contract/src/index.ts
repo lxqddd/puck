@@ -6,10 +6,12 @@ export const EVENTS = {
   mascotOpenChat: 'mascot:open-chat',
   mascotScale: 'mascot:scale',
   themeChanged: 'theme:changed',
+  bubbleShow: 'bubble:show',
 } as const
 
 export type ChatState = 'idle' | 'thinking' | 'speaking'
 export type ThemeMode = 'light' | 'dark' | 'system'
+export type BubbleSide = 'left' | 'right'
 
 export interface ChatDeltaEvent {
   messageId: string
@@ -39,6 +41,16 @@ export interface MascotScaleEvent {
 
 export interface ThemeChangedEvent {
   theme: ThemeMode
+}
+
+export interface BubbleState {
+  text: string
+  side: BubbleSide
+}
+
+export interface BubbleShowEvent {
+  text: string
+  side: BubbleSide
 }
 
 export type ProviderType = 'openai-compatible' | 'anthropic' | 'gemini'

@@ -13,6 +13,7 @@ export default defineConfig({
       input: {
         index: fileURLToPath(new URL('index.html', import.meta.url)),
         mascot: fileURLToPath(new URL('mascot.html', import.meta.url)),
+        bubble: fileURLToPath(new URL('bubble.html', import.meta.url)),
         chat: fileURLToPath(new URL('chat.html', import.meta.url)),
         settings: fileURLToPath(new URL('settings.html', import.meta.url)),
       },
