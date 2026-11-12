@@ -244,7 +244,7 @@ body.mascot-body {
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
-  max-width: min(300px, calc(100vw - 24px));
+  max-width: min(150px, calc(100vw - 24px));
   padding: 10px 14px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.97);

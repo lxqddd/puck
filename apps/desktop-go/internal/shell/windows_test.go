@@ -3,6 +3,8 @@ package shell
 import (
 	"math"
 	"testing"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 func TestScaledMascotSize(t *testing.T) {
@@ -33,11 +35,47 @@ func TestClampMascotScale(t *testing.T) {
 		{in: 1.24, want: 1.2},
 		{in: 1.26, want: 1.3},
 		{in: 2.0, want: 1.5},
-		{in: math.NaN(), want: 1},
+		{in: math.NaN(), want: MascotDefaultScale},
 	}
 	for _, tc := range cases {
 		if got := clampMascotScale(tc.in); got != tc.want {
 			t.Fatalf("clampMascotScale(%v) = %v, want %v", tc.in, got, tc.want)
 		}
+	}
+}
+
+func TestBottomRightPosition(t *testing.T) {
+	cases := []struct {
+		name          string
+		area          application.Rect
+		width, height int
+		wantX, wantY  int
+	}{
+		{
+			name:  "primary work area",
+			area:  application.Rect{X: 0, Y: 30, Width: 1792, Height: 1090},
+			width: 216, height: 252,
+			wantX: 1560, wantY: 844,
+		},
+		{
+			name:  "left-side display with negative origin",
+			area:  application.Rect{X: -2560, Y: 0, Width: 2560, Height: 1440},
+			width: 216, height: 252,
+			wantX: -232, wantY: 1164,
+		},
+		{
+			name:  "window larger than work area clamps to origin",
+			area:  application.Rect{X: 0, Y: 30, Width: 400, Height: 300},
+			width: 500, height: 400,
+			wantX: 0, wantY: 30,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			x, y := bottomRightPosition(tc.area, tc.width, tc.height)
+			if x != tc.wantX || y != tc.wantY {
+				t.Fatalf("bottomRightPosition() = (%d,%d), want (%d,%d)", x, y, tc.wantX, tc.wantY)
+			}
+		})
 	}
 }

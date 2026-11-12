@@ -18,6 +18,7 @@ const (
 	mascotHeight       = 420
 	mascotMarginX      = 16
 	mascotMarginBottom = 24
+	MascotDefaultScale = 0.6
 	mascotMinScale     = 0.5
 	mascotMaxScale     = 1.5
 	mascotScaleStep    = 0.1
@@ -34,7 +35,7 @@ type Windows struct {
 }
 
 func NewWindows(app *application.App) *Windows {
-	return &Windows{app: app, scale: 1}
+	return &Windows{app: app, scale: MascotDefaultScale}
 }
 
 func (w *Windows) CreateMascot() *MascotController {
@@ -95,9 +96,8 @@ func (w *Windows) positionMascotWhenReady() {
 				}
 			}
 			area := screen.WorkArea
-			_, height := scaledMascotSize(w.MascotScale())
-			x := area.X + mascotMarginX
-			y := area.Y + area.Height - height - mascotMarginBottom
+			width, height := scaledMascotSize(w.MascotScale())
+			x, y := bottomRightPosition(area, width, height)
 			w.mascot.SetPosition(x, y)
 			w.mascot.Show()
 			bounds := w.mascot.Bounds()
@@ -120,7 +120,7 @@ func (w *Windows) Controller() *MascotController {
 
 func clampMascotScale(scale float64) float64 {
 	if math.IsNaN(scale) || math.IsInf(scale, 0) {
-		return 1
+		return MascotDefaultScale
 	}
 	scale = math.Round(scale*10) / 10
 	if scale < mascotMinScale {
@@ -134,6 +134,19 @@ func clampMascotScale(scale float64) float64 {
 
 func scaledMascotSize(scale float64) (int, int) {
 	return int(math.Round(mascotWidth * scale)), int(math.Round(mascotHeight * scale))
+}
+
+// bottomRightPosition 计算桌宠启动时在工作区右下角的位置。
+func bottomRightPosition(area application.Rect, width, height int) (int, int) {
+	x := area.X + area.Width - width - mascotMarginX
+	if x < area.X {
+		x = area.X
+	}
+	y := area.Y + area.Height - height - mascotMarginBottom
+	if y < area.Y {
+		y = area.Y
+	}
+	return x, y
 }
 
 // SetInitialMascotScale 必须在 CreateMascot 之前调用。
@@ -222,13 +235,13 @@ func (w *Windows) clampToWorkArea(bounds application.Rect) application.Rect {
 		screen = nearest
 	}
 	area := screen.WorkArea
-	if maxX := area.X + area.Width - bounds.Width; bounds.X > maxX {
+	if maxX := area.X + area.Width - bounds.Width - mascotMarginX; bounds.X > maxX {
 		bounds.X = maxX
 	}
 	if bounds.X < area.X {
 		bounds.X = area.X
 	}
-	if maxY := area.Y + area.Height - bounds.Height; bounds.Y > maxY {
+	if maxY := area.Y + area.Height - bounds.Height - mascotMarginBottom; bounds.Y > maxY {
 		bounds.Y = maxY
 	}
 	if bounds.Y < area.Y {
@@ -306,7 +319,7 @@ func (w *Windows) CreateTray() {
 	menu.AddSeparator()
 	menu.Add("放大").OnClick(func(*application.Context) { w.ScaleMascotBy(mascotScaleStep) })
 	menu.Add("缩小").OnClick(func(*application.Context) { w.ScaleMascotBy(-mascotScaleStep) })
-	menu.Add("重置大小").OnClick(func(*application.Context) { w.SetMascotScale(1) })
+	menu.Add("重置大小").OnClick(func(*application.Context) { w.SetMascotScale(MascotDefaultScale) })
 	menu.AddSeparator()
 	menu.Add("显示 / 隐藏 Puck").OnClick(func(*application.Context) { w.ToggleMascot() })
 	menu.AddSeparator()

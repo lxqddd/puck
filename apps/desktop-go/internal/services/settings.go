@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"puck/internal/secure"
+	"puck/internal/shell"
 	"puck/internal/store"
 )
 
@@ -33,7 +34,7 @@ func (s *SettingsService) Save(settings store.Settings, apiKey string) error {
 		settings.MascotScale = current.MascotScale
 	}
 	if settings.MascotScale <= 0 {
-		settings.MascotScale = 1
+		settings.MascotScale = shell.MascotDefaultScale
 	}
 	if settings.Provider != nil {
 		p := settings.Provider

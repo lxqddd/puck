@@ -49,7 +49,7 @@ func main() {
 	settings, _ := settingsStore.Load()
 	initialScale := settings.MascotScale
 	if initialScale <= 0 {
-		initialScale = 1
+		initialScale = shell.MascotDefaultScale
 	}
 	windows.SetInitialMascotScale(initialScale)
 	var persistGeneration atomic.Uint64
