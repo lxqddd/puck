@@ -6,5 +6,6 @@ export type {
     ChatDoneEvent,
     ChatErrorEvent,
     ChatStateEvent,
-    MascotScaleEvent
+    MascotScaleEvent,
+    ThemeChangedEvent
 } from "./models.js";

@@ -12,6 +12,8 @@ import type {
   SendResult,
   Settings,
   StoredMessage,
+  ThemeChangedEvent,
+  ThemeMode,
 } from '@puck/contract'
 import { ChatService, MascotService, SettingsService } from './bindings/puck/internal/services'
 import type { Position } from './bindings/puck/internal/services'
@@ -51,6 +53,7 @@ export const bridge = {
       providers,
       activeProviderId: settings.activeProviderId,
       mascotScale: settings.mascotScale,
+      theme: (settings.theme as ThemeMode) || 'system',
     }
   },
   saveProvider: (provider: ProviderConfig, apiKey: string): Promise<ProviderConfig> =>
@@ -61,6 +64,7 @@ export const bridge = {
     (await SettingsService.ListModels(provider, apiKey)) ?? [],
   deleteProvider: (id: string) => SettingsService.DeleteProvider(id),
   setActiveProvider: (id: string) => SettingsService.SetActiveProvider(id),
+  setTheme: (theme: ThemeMode) => SettingsService.SetTheme(theme),
 
   onChatDelta: (callback: (event: ChatDeltaEvent) => void) => subscribe(EVENTS.chatDelta, callback),
   onChatDone: (callback: (event: ChatDoneEvent) => void) => subscribe(EVENTS.chatDone, callback),
@@ -68,4 +72,6 @@ export const bridge = {
   onChatState: (callback: (event: ChatStateEvent) => void) => subscribe(EVENTS.chatState, callback),
   onMascotScale: (callback: (event: MascotScaleEvent) => void) =>
     subscribe(EVENTS.mascotScale, callback),
+  onThemeChanged: (callback: (event: ThemeChangedEvent) => void) =>
+    subscribe(EVENTS.themeChanged, callback),
 }

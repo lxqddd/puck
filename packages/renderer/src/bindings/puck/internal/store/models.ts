@@ -16,4 +16,5 @@ export interface Settings {
     "providers": (ProviderConfig | null)[] | null;
     "activeProviderId": string;
     "mascotScale": number;
+    "theme": string;
 }

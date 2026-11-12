@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import type { ProviderConfig, ProviderTestResult, Settings } from '@puck/contract'
+import type { ProviderConfig, ProviderTestResult, Settings, ThemeMode } from '@puck/contract'
 import { bridge } from '../bridge'
+import { useTheme } from '../shared/theme'
 
 interface Draft {
   id: string
@@ -27,7 +28,12 @@ function emptyDraft(): Draft {
   }
 }
 
-const settings = ref<Settings>({ providers: [], activeProviderId: '', mascotScale: 1 })
+const settings = ref<Settings>({
+  providers: [],
+  activeProviderId: '',
+  mascotScale: 1,
+  theme: 'system',
+})
 const draft = ref<Draft>(emptyDraft())
 const apiKey = ref('')
 const loading = ref(true)
@@ -54,7 +60,7 @@ const modelPlaceholder = computed(() => DEFAULT_MODELS[draft.value.type] ?? 'dee
 
 const labelClass = 'flex flex-col gap-[7px] text-[13px] font-semibold text-puck-ink'
 const fieldClass =
-  'rounded-xl border border-puck-line bg-white px-3.5 py-[11px] text-sm text-puck-ink outline-none focus:border-puck-mint/60 focus:ring-[3px] focus:ring-puck-mint/14'
+  'rounded-xl border border-puck-line bg-puck-card px-3.5 py-[11px] text-sm text-puck-ink outline-none placeholder:text-puck-muted focus:border-puck-mint/60 focus:ring-[3px] focus:ring-puck-mint/14'
 const primaryClass =
   'rounded-xl border-none bg-gradient-to-br from-[#4fd0ac] to-[#2fae8c] px-6 py-[11px] text-sm font-semibold text-white disabled:opacity-60'
 const secondaryClass =
@@ -62,6 +68,13 @@ const secondaryClass =
 const dangerClass =
   'rounded-xl border border-[#9a3535]/35 bg-transparent px-[18px] py-[11px] text-[13px] text-[#9a3535] hover:bg-[#ff8f8f]/12'
 const hintClass = 'm-0 text-xs leading-relaxed text-puck-muted'
+
+const { mode: themeMode, setTheme } = useTheme()
+const themeOptions: Array<{ value: ThemeMode; label: string }> = [
+  { value: 'system', label: '跟随系统' },
+  { value: 'light', label: '浅色' },
+  { value: 'dark', label: '深色' },
+]
 
 function typeLabel(type: string): string {
   if (type === 'anthropic') return 'Anthropic'
@@ -254,17 +267,37 @@ onMounted(async () => {
 <template>
   <div class="flex h-full flex-col">
     <header
-      class="border-b border-puck-line px-6 pb-4 pl-[88px] pt-[18px] [-webkit-app-region:drag]"
+      class="flex items-start justify-between gap-4 border-b border-puck-line px-6 pb-4 pl-[88px] pt-[18px] [-webkit-app-region:drag]"
     >
-      <h1 class="m-0 mb-1 text-xl font-bold">设置</h1>
-      <p class="m-0 text-xs text-puck-muted">
-        管理模型供应商；API Key 保存在系统钥匙串，当前对话使用选中的供应商。
-      </p>
+      <div>
+        <h1 class="m-0 mb-1 text-xl font-bold">设置</h1>
+        <p class="m-0 text-xs text-puck-muted">
+          管理模型供应商；API Key 保存在系统钥匙串，当前对话使用选中的供应商。
+        </p>
+      </div>
+      <div
+        class="flex items-center gap-1 rounded-full border border-puck-line bg-white/60 p-1 text-xs [-webkit-app-region:no-drag] dark:bg-white/10"
+      >
+        <button
+          v-for="option in themeOptions"
+          :key="option.value"
+          type="button"
+          class="rounded-full bg-transparent px-2.5 py-1 font-medium transition-colors hover:bg-puck-mint/10"
+          :class="
+            themeMode === option.value
+              ? 'bg-puck-mint/16 text-puck-mint-deep'
+              : 'text-puck-muted hover:text-puck-ink'
+          "
+          @click="setTheme(option.value)"
+        >
+          {{ option.label }}
+        </button>
+      </div>
     </header>
 
     <div v-if="!loading" class="flex min-h-0 flex-1">
       <aside
-        class="flex min-h-0 w-[210px] flex-none flex-col border-r border-puck-line bg-white/45"
+        class="flex min-h-0 w-[210px] flex-none flex-col border-r border-puck-line bg-white/45 dark:bg-white/[0.04]"
       >
         <div
           class="flex items-center justify-between px-3 pb-2 pt-3.5 text-xs font-semibold text-puck-muted"
@@ -281,7 +314,7 @@ onMounted(async () => {
           <button
             v-for="provider in providers"
             :key="provider.id"
-            class="flex w-full items-center gap-2 rounded-[10px] border-none bg-transparent px-2.5 py-[9px] text-left text-[13px] text-puck-ink hover:bg-puck-ink/5"
+            class="flex w-full items-center gap-2 rounded-[10px] border-none bg-transparent px-2.5 py-[9px] text-left text-[13px] text-puck-ink hover:bg-puck-ink/5 dark:hover:bg-white/5"
             :class="{ 'bg-puck-mint/16': provider.id === draft.id }"
             @click="edit(provider)"
           >

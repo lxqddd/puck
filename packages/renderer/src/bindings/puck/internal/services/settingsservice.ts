@@ -37,6 +37,13 @@ export function SetActiveProvider(id: string): $CancellablePromise<void> {
 }
 
 /**
+ * SetTheme 保存主题偏好并广播给所有窗口。
+ */
+export function SetTheme(theme: string): $CancellablePromise<void> {
+    return $Call.ByID(2022204002, theme);
+}
+
+/**
  * TestProvider 用当前表单内容发一条最小请求，验证地址、模型与 Key 是否可用。
  */
 export function TestProvider(provider: store$0.ProviderConfig, apiKey: string): $CancellablePromise<$models.ProviderTestResult> {

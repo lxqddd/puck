@@ -5,9 +5,11 @@ export const EVENTS = {
   chatState: 'chat:state',
   mascotOpenChat: 'mascot:open-chat',
   mascotScale: 'mascot:scale',
+  themeChanged: 'theme:changed',
 } as const
 
 export type ChatState = 'idle' | 'thinking' | 'speaking'
+export type ThemeMode = 'light' | 'dark' | 'system'
 
 export interface ChatDeltaEvent {
   messageId: string
@@ -35,6 +37,10 @@ export interface MascotScaleEvent {
   scale: number
 }
 
+export interface ThemeChangedEvent {
+  theme: ThemeMode
+}
+
 export type ProviderType = 'openai-compatible' | 'anthropic' | 'gemini'
 
 export interface ProviderConfig {
@@ -52,6 +58,7 @@ export interface Settings {
   providers: ProviderConfig[]
   activeProviderId: string
   mascotScale: number
+  theme: ThemeMode
 }
 
 export interface ProviderTestResult {

@@ -68,6 +68,40 @@ func TestNormalizeSettingsAssignsMissingFields(t *testing.T) {
 	}
 }
 
+func TestThemeDefaultsAndPersists(t *testing.T) {
+	store := newTestStore(t)
+
+	settings, err := store.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if settings.Theme != "system" {
+		t.Fatalf("default theme = %q, want system", settings.Theme)
+	}
+
+	if err := store.Save(Settings{Theme: "dark"}); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	settings, err = store.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if settings.Theme != "dark" {
+		t.Fatalf("theme = %q, want dark", settings.Theme)
+	}
+
+	if err := store.Save(Settings{Theme: "invalid"}); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	settings, err = store.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if settings.Theme != "system" {
+		t.Fatalf("invalid theme normalized to %q, want system", settings.Theme)
+	}
+}
+
 func TestUpdatePreservesOtherFields(t *testing.T) {
 	store := newTestStore(t)
 	if err := store.Save(Settings{

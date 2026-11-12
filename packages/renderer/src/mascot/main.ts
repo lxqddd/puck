@@ -3,6 +3,8 @@ import MascotApp from './MascotApp.vue'
 import '../shared/tailwind.css'
 import '../shared/base.scss'
 import './mascot.scss'
+import { initTheme } from '../shared/theme'
 
+void initTheme()
 createApp(MascotApp).mount('#app')
 document.getElementById('boot')?.remove()

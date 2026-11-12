@@ -26,3 +26,7 @@ export interface ChatStateEvent {
 export interface MascotScaleEvent {
     "scale": number;
 }
+
+export interface ThemeChangedEvent {
+    "theme": string;
+}

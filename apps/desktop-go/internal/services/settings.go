@@ -7,9 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/zalando/go-keyring"
 
 	"puck/internal/ai"
+	"puck/internal/events"
 	"puck/internal/secure"
 	"puck/internal/store"
 )
@@ -120,6 +122,25 @@ func (s *SettingsService) SaveProvider(provider store.ProviderConfig, apiKey str
 		saved.KeyMask = ""
 	}
 	return saved, nil
+}
+
+// SetTheme 保存主题偏好并广播给所有窗口。
+func (s *SettingsService) SetTheme(theme string) error {
+	theme = strings.TrimSpace(theme)
+	switch theme {
+	case "system", "light", "dark":
+	default:
+		return fmt.Errorf("未知主题: %s", theme)
+	}
+	if err := s.store.Update(func(settings *store.Settings) {
+		settings.Theme = theme
+	}); err != nil {
+		return err
+	}
+	if app := application.Get(); app != nil {
+		app.Event.Emit(events.ThemeChanged, events.ThemeChangedEvent{Theme: theme})
+	}
+	return nil
 }
 
 func (s *SettingsService) SetActiveProvider(id string) error {

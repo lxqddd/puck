@@ -7,6 +7,9 @@
   --puck-ink: #17342d;
   --puck-muted: #6b7f79;
   --puck-line: rgba(23, 52, 45, 0.12);
+  --puck-surface: #ffffff;
+  --puck-surface-soft: #fffdf9;
+  color-scheme: light;
   font-family:
     'SF Pro Rounded',
     'PingFang SC',
@@ -16,6 +19,20 @@
     sans-serif;
   color: var(--puck-ink);
   -webkit-font-smoothing: antialiased;
+}
+
+html.dark {
+  --puck-mint: #3fc9a5;
+  --puck-mint-deep: #7fe6c7;
+  --puck-mint-soft: #1d3b32;
+  --puck-cream: #121715;
+  --puck-card: #1b221f;
+  --puck-ink: #e9f3ef;
+  --puck-muted: #9fb1aa;
+  --puck-line: rgba(233, 243, 239, 0.14);
+  --puck-surface: #1f2623;
+  --puck-surface-soft: #1c2320;
+  color-scheme: dark;
 }
 
 * {

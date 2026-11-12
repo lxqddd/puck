@@ -32,6 +32,7 @@ type Settings struct {
 	Providers        []*ProviderConfig `json:"providers"`
 	ActiveProviderID string            `json:"activeProviderId"`
 	MascotScale      float64           `json:"mascotScale"`
+	Theme            string            `json:"theme"`
 }
 
 type SettingsStore struct {
@@ -44,6 +45,7 @@ type rawSettings struct {
 	Providers        []*ProviderConfig `json:"providers"`
 	ActiveProviderID string            `json:"activeProviderId"`
 	MascotScale      float64           `json:"mascotScale"`
+	Theme            string            `json:"theme"`
 	Provider         *ProviderConfig   `json:"provider"`
 }
 
@@ -66,7 +68,9 @@ func (s *SettingsStore) loadLocked() (Settings, error) {
 	data, err := os.ReadFile(s.path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return Settings{}, nil
+			settings := Settings{}
+			normalizeSettings(&settings)
+			return settings, nil
 		}
 		return Settings{}, err
 	}
@@ -83,6 +87,7 @@ func (s *SettingsStore) loadLocked() (Settings, error) {
 		Providers:        providers,
 		ActiveProviderID: raw.ActiveProviderID,
 		MascotScale:      raw.MascotScale,
+		Theme:            raw.Theme,
 	}
 	normalizeSettings(&settings)
 	if migrated {
@@ -176,6 +181,7 @@ func normalizeSettings(settings *Settings) {
 		providers = append(providers, provider)
 	}
 	settings.Providers = providers
+	settings.Theme = normalizeTheme(settings.Theme)
 
 	if !seen[settings.ActiveProviderID] {
 		if len(providers) > 0 {
@@ -183,6 +189,15 @@ func normalizeSettings(settings *Settings) {
 		} else {
 			settings.ActiveProviderID = ""
 		}
+	}
+}
+
+func normalizeTheme(value string) string {
+	switch strings.TrimSpace(value) {
+	case "light", "dark":
+		return strings.TrimSpace(value)
+	default:
+		return "system"
 	}
 }
 

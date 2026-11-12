@@ -247,6 +247,16 @@
   border-radius: 2px;
 }
 
+html.dark .bubble {
+  background: rgba(31, 38, 35, 0.97);
+  color: var(--puck-ink);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+html.dark .bubble::after {
+  background: rgba(31, 38, 35, 0.97);
+}
+
 .bubble-enter-active,
 .bubble-leave-active {
   transition:

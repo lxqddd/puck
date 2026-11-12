@@ -17,8 +17,11 @@ import type {
   RoleType,
 } from 'ant-design-x-vue'
 import type { MenuProps } from 'ant-design-vue'
+import { theme as antdTheme } from 'ant-design-vue'
 import { bridge } from '../bridge'
 import { persona } from '../character'
+import PuckAvatar from '../shared/PuckAvatar.vue'
+import { useTheme } from '../shared/theme'
 
 interface Message {
   id: string
@@ -40,6 +43,8 @@ const unsubscribers: Array<() => void> = []
 
 const suggestions = ['帮我想个周末计划', '给我讲个冷笑话', '解释一下什么是 RAG']
 
+const { isDark, setTheme } = useTheme()
+
 let pendingMessageId = ''
 let viewEpoch = 0
 let toastTimer: number | undefined
@@ -50,27 +55,25 @@ const streamingMessageId = computed(() => {
   return last && last.role === 'assistant' ? last.id : ''
 })
 
-const themeConfig = {
+const themeConfig = computed(() => ({
+  algorithm: isDark.value ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
   token: {
     colorPrimary: '#35bd98',
-    colorText: '#17342d',
-    colorTextSecondary: '#6b7f79',
-    colorBgContainer: '#ffffff',
-    colorBorder: 'rgba(23, 52, 45, 0.12)',
+    colorText: isDark.value ? '#e9f3ef' : '#17342d',
+    colorTextSecondary: isDark.value ? '#9fb1aa' : '#6b7f79',
+    colorBgContainer: isDark.value ? '#1f2623' : '#ffffff',
+    colorBorder: isDark.value ? 'rgba(233, 243, 239, 0.14)' : 'rgba(23, 52, 45, 0.12)',
     borderRadius: 12,
     fontFamily:
       "'SF Pro Rounded', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif",
   },
+}))
+
+function toggleTheme() {
+  void setTheme(isDark.value ? 'light' : 'dark')
 }
 
-const puckAvatar = h(
-  'span',
-  {
-    class:
-      'grid h-[30px] w-[30px] place-items-center rounded-full bg-gradient-to-br from-[#86eccb] to-[#35bd98] text-[13px] font-bold text-white',
-  },
-  'P',
-)
+const puckAvatar = h(PuckAvatar, { class: 'h-[30px] w-[30px] rounded-full' })
 
 const roles: RoleType = {
   ai: {
@@ -127,14 +130,9 @@ const promptItems: PromptProps[] = suggestions.map((text, index) => ({
   label: text,
 }))
 
-const welcomeIcon = h(
-  'span',
-  {
-    class:
-      'grid h-16 w-16 place-items-center rounded-[22px] bg-gradient-to-br from-[#86eccb] to-[#35bd98] text-[28px] font-bold text-white shadow-[0_12px_28px_rgba(53,189,152,0.35)]',
-  },
-  'P',
-)
+const welcomeIcon = h(PuckAvatar, {
+  class: 'h-16 w-16 rounded-full shadow-[0_12px_28px_rgba(53,189,152,0.35)]',
+})
 
 const conversationItems = computed(() =>
   conversations.value.map((conversation) => ({
@@ -406,27 +404,61 @@ onBeforeUnmount(() => {
         class="flex items-center justify-between gap-4 border-b border-puck-line px-6 pb-4 pl-[88px] pt-[18px] [-webkit-app-region:drag]"
       >
         <div class="flex items-center gap-3">
-          <span
-            class="grid h-[38px] w-[38px] place-items-center rounded-full bg-gradient-to-br from-[#86eccb] to-[#35bd98] text-[17px] font-bold text-white shadow-[0_4px_10px_rgba(53,189,152,0.35)]"
-            >P</span
-          >
+          <PuckAvatar
+            class="h-[38px] w-[38px] rounded-full shadow-[0_4px_10px_rgba(53,189,152,0.35)]"
+          />
           <div>
             <h1 class="m-0 text-base font-bold tracking-[0.2px]">Puck</h1>
             <p class="mb-0 mt-0.5 text-xs text-puck-muted">住在你桌角的小伙伴</p>
           </div>
         </div>
-        <span
-          class="rounded-full px-2.5 py-[5px] text-xs font-semibold"
-          :class="
-            pending ? 'bg-[#ffd166]/25 text-[#8a6414]' : 'bg-puck-mint/12 text-puck-mint-deep'
-          "
-          >{{ pending ? '在想…' : '在线' }}</span
-        >
+        <div class="flex items-center gap-2 [-webkit-app-region:no-drag]">
+          <button
+            type="button"
+            class="grid h-8 w-8 place-items-center rounded-full border border-puck-line bg-white/60 text-puck-ink transition-colors hover:bg-white dark:bg-white/10 dark:hover:bg-white/15"
+            title="切换亮暗主题"
+            @click="toggleTheme"
+          >
+            <svg
+              v-if="isDark"
+              class="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <circle cx="12" cy="12" r="4" />
+              <path
+                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
+              />
+            </svg>
+            <svg
+              v-else
+              class="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
+            </svg>
+          </button>
+          <span
+            class="rounded-full px-2.5 py-[5px] text-xs font-semibold"
+            :class="
+              pending ? 'bg-[#ffd166]/25 text-[#8a6414]' : 'bg-puck-mint/12 text-puck-mint-deep'
+            "
+            >{{ pending ? '在想…' : '在线' }}</span
+          >
+        </div>
       </header>
 
       <div class="flex min-h-0 flex-1">
         <aside
-          class="flex min-h-0 w-[210px] flex-none flex-col overflow-hidden border-r border-puck-line bg-white/45 p-2.5"
+          class="flex min-h-0 w-[210px] flex-none flex-col overflow-hidden border-r border-puck-line bg-white/45 p-2.5 dark:bg-white/[0.04]"
         >
           <Conversations
             class="history-conversations min-h-0 flex-1"
@@ -467,11 +499,16 @@ onBeforeUnmount(() => {
             />
           </main>
 
-          <p v-if="errorText" class="m-0 bg-[#ff8f8f]/18 px-6 py-2.5 text-xs text-[#9a3535]">
+          <p
+            v-if="errorText"
+            class="m-0 bg-[#ff8f8f]/18 px-6 py-2.5 text-xs text-[#9a3535] dark:bg-[#ff8f8f]/12 dark:text-[#ffb4b4]"
+          >
             {{ errorText }}
           </p>
 
-          <footer class="composer w-full border-t border-puck-line bg-white/42 px-6 pb-[18px] pt-3.5">
+          <footer
+            class="composer w-full border-t border-puck-line bg-white/42 px-6 pb-[18px] pt-3.5 dark:bg-white/[0.03]"
+          >
             <Sender
               :value="input"
               :loading="pending"
@@ -488,7 +525,7 @@ onBeforeUnmount(() => {
       <transition name="toast">
         <div
           v-if="toast"
-          class="pointer-events-none fixed bottom-[98px] left-1/2 z-20 -translate-x-1/2 rounded-full bg-[#17342d]/86 px-3.5 py-2 text-xs text-white"
+          class="pointer-events-none fixed bottom-[98px] left-1/2 z-20 -translate-x-1/2 rounded-full bg-[#17342d]/86 px-3.5 py-2 text-xs text-white dark:bg-[#e9f3ef] dark:text-[#17342d]"
         >
           {{ toast }}
         </div>

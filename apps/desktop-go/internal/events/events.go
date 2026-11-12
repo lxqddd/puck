@@ -3,11 +3,12 @@ package events
 import "github.com/wailsapp/wails/v3/pkg/application"
 
 const (
-	ChatDelta   = "chat:delta"
-	ChatDone    = "chat:done"
-	ChatError   = "chat:error"
-	ChatState   = "chat:state"
-	MascotScale = "mascot:scale"
+	ChatDelta    = "chat:delta"
+	ChatDone     = "chat:done"
+	ChatError    = "chat:error"
+	ChatState    = "chat:state"
+	MascotScale  = "mascot:scale"
+	ThemeChanged = "theme:changed"
 )
 
 type ChatDeltaEvent struct {
@@ -36,10 +37,15 @@ type MascotScaleEvent struct {
 	Scale float64 `json:"scale"`
 }
 
+type ThemeChangedEvent struct {
+	Theme string `json:"theme"`
+}
+
 func Register() {
 	application.RegisterEvent[ChatDeltaEvent](ChatDelta)
 	application.RegisterEvent[ChatDoneEvent](ChatDone)
 	application.RegisterEvent[ChatErrorEvent](ChatError)
 	application.RegisterEvent[ChatStateEvent](ChatState)
 	application.RegisterEvent[MascotScaleEvent](MascotScale)
+	application.RegisterEvent[ThemeChangedEvent](ThemeChanged)
 }
