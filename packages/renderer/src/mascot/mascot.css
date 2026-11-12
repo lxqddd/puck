@@ -29,6 +29,15 @@ body.mascot-body {
   transform-origin: 50% 90%;
 }
 
+.avatar-stage[data-render='rive'] .puck {
+  display: none;
+}
+
+.avatar-stage .puck-rive-canvas {
+  position: relative;
+  z-index: 1;
+}
+
 .body-group {
   transform-origin: 120px 250px;
 }

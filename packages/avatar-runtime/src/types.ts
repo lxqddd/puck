@@ -28,6 +28,20 @@ export const ACTIONS = {
 
 export type ActionId = keyof typeof ACTIONS
 
+export interface RiveInputNames {
+  emotion?: string
+  lipLevel?: string
+  speaking?: string
+  thinking?: string
+  working?: string
+}
+
+export interface RivePackConfig {
+  artboard?: string
+  stateMachine?: string
+  inputs?: RiveInputNames
+}
+
 export interface CharacterPack {
   id: string
   displayName: string
@@ -39,6 +53,17 @@ export interface CharacterPack {
   /** 语义情绪 → 表情 */
   emotionMap: Record<string, string>
   idlePool: ActionId[]
+  renderMode: 'static' | 'rive'
+  riveAssetUrl?: string
+  rive?: RivePackConfig
+}
+
+export interface HitArea {
+  id: string
+  x: number
+  y: number
+  width: number
+  height: number
 }
 
 export interface Manifest {
@@ -47,6 +72,9 @@ export interface Manifest {
   window: { width: number; height: number }
   actions: string[]
   emotions: string[]
+  assets?: { mode?: 'static' | 'rive'; rive?: string }
+  rive?: RivePackConfig
+  hitAreas?: HitArea[]
 }
 
 export interface Mapping {
@@ -55,12 +83,21 @@ export interface Mapping {
   idlePool: string[]
 }
 
-export function buildCharacterPack(manifest: Manifest, mapping: Mapping): CharacterPack {
+export interface BuildCharacterPackOptions {
+  riveAssetUrl?: string
+}
+
+export function buildCharacterPack(
+  manifest: Manifest,
+  mapping: Mapping,
+  options: BuildCharacterPackOptions = {},
+): CharacterPack {
   const actions = manifest.actions.filter((id): id is ActionId => id in ACTIONS)
   const known = new Set(actions)
   const gestureEntries = Object.entries(mapping.gestures).filter(
     (entry): entry is [string, ActionId] => known.has(entry[1] as ActionId),
   )
+  const wantsRive = (manifest.assets?.mode ?? 'static') === 'rive'
   return {
     id: manifest.id,
     displayName: manifest.displayName,
@@ -70,6 +107,9 @@ export function buildCharacterPack(manifest: Manifest, mapping: Mapping): Charac
     gestures: Object.fromEntries(gestureEntries),
     emotionMap: { ...mapping.emotions },
     idlePool: mapping.idlePool.filter((id): id is ActionId => known.has(id as ActionId)),
+    renderMode: wantsRive && options.riveAssetUrl ? 'rive' : 'static',
+    riveAssetUrl: options.riveAssetUrl,
+    rive: manifest.rive,
   }
 }
 
@@ -77,6 +117,7 @@ export interface AvatarBackend {
   mount(el: HTMLElement, pack: CharacterPack): void
   play(action: ActionId): void
   setEmotion(emotion: string): void
+  setLipLevel?(level: number): void
   destroy(): void
 }
 

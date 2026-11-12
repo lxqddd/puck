@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { AvatarRuntime, buildCharacterPack } from '../src/index.js'
+import { riveActionPlan } from '../src/rive-plan.js'
 import type { ActionId, AvatarBackend, CharacterPack } from '../src/index.js'
 
 const manifest = {
@@ -87,5 +88,54 @@ describe('AvatarRuntime', () => {
     expect(runtime.current.emotion).toBe('happy')
     runtime.applySemanticEmotion('unknown')
     expect(runtime.current.emotion).toBe('happy')
+  })
+
+  it('forwards clamped lip levels to the backend', () => {
+    const levels: number[] = []
+    const backend: AvatarBackend = {
+      mount() {},
+      play() {},
+      setEmotion() {},
+      setLipLevel(level) {
+        levels.push(level)
+      },
+      destroy() {},
+    }
+    const runtime = new AvatarRuntime({ pack: createPack(), backend })
+    runtime.setLipLevel(1.5)
+    runtime.setLipLevel(-1)
+    runtime.setLipLevel(0.4)
+    expect(levels).toEqual([1, 0, 0.4])
+  })
+})
+
+describe('Rive integration helpers', () => {
+  it('maps hold actions to booleans and one-shot actions to triggers', () => {
+    expect(riveActionPlan('speak').bools).toEqual({
+      speaking: true,
+      thinking: false,
+      working: false,
+    })
+    expect(riveActionPlan('think').bools.thinking).toBe(true)
+    expect(riveActionPlan('work').bools.working).toBe(true)
+    expect(riveActionPlan('wave').trigger).toBe('wave')
+    expect(riveActionPlan('idle').trigger).toBeUndefined()
+    expect(riveActionPlan('idle').bools).toEqual({
+      speaking: false,
+      thinking: false,
+      working: false,
+    })
+  })
+
+  it('only enables Rive mode when an asset url is provided', () => {
+    const riveManifest = {
+      ...manifest,
+      assets: { mode: 'rive' as const, rive: 'assets/rive/character.riv' },
+      rive: { stateMachine: 'PuckSM' },
+    }
+    expect(buildCharacterPack(riveManifest, mapping).renderMode).toBe('static')
+    const pack = buildCharacterPack(riveManifest, mapping, { riveAssetUrl: '/character.riv' })
+    expect(pack.renderMode).toBe('rive')
+    expect(pack.rive?.stateMachine).toBe('PuckSM')
   })
 })

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { AvatarRuntime, DomAvatarBackend } from '@puck/avatar-runtime'
+import type { AvatarBackend } from '@puck/avatar-runtime'
 import type { ChatState } from '@puck/contract'
 import { bridge } from '../bridge'
 import { characterManifest, characterPack, persona } from '../character'
@@ -13,6 +14,7 @@ const scale = ref(1)
 let runtime: AvatarRuntime | null = null
 let tickTimer: number | undefined
 let bubbleTimer: number | undefined
+let lipTimer: number | undefined
 let streamed = ''
 const unsubscribers: Array<() => void> = []
 
@@ -40,7 +42,7 @@ function showBubble(text: string, ms: number) {
 }
 
 function reportHitRegion(attempt = 0) {
-  const area = characterManifest.hitAreas[0]
+  const area = characterManifest.hitAreas?.[0]
   if (!area) return
   const current = scale.value
   try {
@@ -63,6 +65,24 @@ function reportHitRegion(attempt = 0) {
 function retryHitRegion(attempt: number) {
   if (attempt >= 8) return
   window.setTimeout(() => reportHitRegion(attempt + 1), 300)
+}
+
+function startLipSync() {
+  stopLipSync()
+  let phase = 0
+  lipTimer = window.setInterval(() => {
+    phase += 0.35
+    const wave = (Math.sin(phase) + 1) / 2
+    runtime?.setLipLevel(0.15 + wave * 0.75 * (0.6 + Math.random() * 0.4))
+  }, 70)
+}
+
+function stopLipSync() {
+  if (lipTimer !== undefined) {
+    window.clearInterval(lipTimer)
+    lipTimer = undefined
+  }
+  runtime?.setLipLevel(0)
 }
 
 const onResize = () => reportHitRegion()
@@ -152,8 +172,24 @@ function onPointerUp(event: PointerEvent) {
   stage.value?.releasePointerCapture?.(event.pointerId)
 }
 
-onMounted(() => {
-  runtime = new AvatarRuntime({ pack: characterPack, backend: new DomAvatarBackend() })
+async function createBackend(): Promise<AvatarBackend> {
+  if (characterPack.renderMode !== 'rive') {
+    return new DomAvatarBackend()
+  }
+  try {
+    const { ResilientAvatarBackend, riveWasmUrl } = await import('@puck/avatar-runtime/rive')
+    return new ResilientAvatarBackend({
+      wasmUrl: riveWasmUrl,
+      onFallback: () => showBubble('动画加载失败，已切回静态形象', 3200),
+    })
+  } catch {
+    return new DomAvatarBackend()
+  }
+}
+
+onMounted(async () => {
+  const backend = await createBackend()
+  runtime = new AvatarRuntime({ pack: characterPack, backend })
   if (stage.value) runtime.mount(stage.value)
   tickTimer = window.setInterval(() => runtime?.tick(), 250)
   window.addEventListener('resize', onResize)
@@ -164,6 +200,8 @@ onMounted(() => {
   unsubscribers.push(
     bridge.onChatState((event) => {
       runtime?.setChatState(event.state as ChatState)
+      if (event.state === 'speaking') startLipSync()
+      else stopLipSync()
       if (event.state === 'thinking') showBubble('让我想想…', 60_000)
       if (event.state === 'idle') {
         window.clearTimeout(bubbleTimer)
@@ -200,6 +238,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.clearInterval(tickTimer)
   window.clearTimeout(bubbleTimer)
+  stopLipSync()
   window.removeEventListener('resize', onResize)
   window.removeEventListener('wheel', onWheel)
   for (const unsubscribe of unsubscribers) unsubscribe()

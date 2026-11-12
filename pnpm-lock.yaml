@@ -26,6 +26,9 @@ importers:
       '@puck/contract':
         specifier: workspace:*
         version: link:../contract
+      '@rive-app/canvas-lite':
+        specifier: 2.50.0
+        version: 2.50.0
     devDependencies:
       vitest:
         specifier: ^5.0.3
@@ -96,6 +99,9 @@ packages:
 
   '@oxc-project/types@0.156.0':
     resolution: {integrity: sha512-1Duyg48TdJNdyhEB8Xn1L36bT9Pv6GUtlKjHxOys8xkaF/rQq3XJE+bAurSK/AgIz5mGFsb77cn9Pb20+WCScw==}
+
+  '@rive-app/canvas-lite@2.50.0':
+    resolution: {integrity: sha512-iJ7cRwkzdKDFFZez+68EgGegeNQZPP5LcfeIopomYSbznR7A99NilYARyx3U9wD7wxbUtRhZEhETYePquYZTRQ==}
 
   '@rolldown/binding-android-arm-eabi@1.2.18':
     resolution: {integrity: sha512-ubTG+4KlidvioxjOFdsdEa2F6JVGZb8m2ByJUqQ7fYzUeT1cEn194POcsQ10PKH4p//q0YQn4SB3YpSuzcA1Yg==}
@@ -654,6 +660,8 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.6.0
 
   '@oxc-project/types@0.156.0': {}
+
+  '@rive-app/canvas-lite@2.50.0': {}
 
   '@rolldown/binding-android-arm-eabi@1.2.18':
     optional: true

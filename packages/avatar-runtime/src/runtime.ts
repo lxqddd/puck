@@ -103,6 +103,10 @@ export class AvatarRuntime {
     this.emit()
   }
 
+  setLipLevel(level: number): void {
+    this.backend?.setLipLevel?.(Math.min(1, Math.max(0, level)))
+  }
+
   applySemanticEmotion(name: string): void {
     const mapped = this.pack.emotionMap[name]
     if (mapped) this.setEmotion(mapped)
