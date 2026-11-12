@@ -30,8 +30,10 @@ const (
 	bubbleHeight = 140
 	bubbleMargin = 8
 
-	// 桌宠窗口左右各有一段透明留白：SVG viewBox 宽 240，身体横向约占 x=46..194。
-	mascotBodyInsetRatio = 46.0 / 240.0
+	// 桌宠 SVG 的 viewBox 与身体横向范围；窗口按 xMidYMid meet 等比缩放，左右会有留白。
+	mascotViewBoxWidth  = 240.0
+	mascotViewBoxHeight = 300.0
+	mascotBodyLeft      = 46.0
 	// 气泡尾巴尖端到桌宠身体边缘的视觉间距。
 	bubbleVisibleGap = 6
 	// 气泡窗口边缘到尾巴尖端的距离，需与 bubble.scss 的 12px 内边距和尾巴外伸保持同步。
@@ -467,14 +469,14 @@ func (w *Windows) ShowBubble(text string, durationMs int) {
 
 	generation := w.bubbleGen.Add(1)
 	w.bubbleMu.Lock()
-	previousSide := w.bubbleState.Side
-	reposition := !w.bubbleShown || previousSide != side
+	wasShown := w.bubbleShown
 	w.bubbleShown = true
 	w.bubbleState = BubbleState{Text: text, Side: side}
 	w.bubbleMu.Unlock()
 
-	if reposition {
-		bubble.SetPosition(bounds.X, bounds.Y)
+	// 每次显示都重新贴到当前桌宠位置，缩放或移动后气泡不会停留在旧位置。
+	bubble.SetPosition(bounds.X, bounds.Y)
+	if !wasShown {
 		bubble.Show()
 		x, y := w.mascot.Position()
 		width, height := w.mascot.Size()
@@ -575,7 +577,7 @@ func (w *Windows) bubblePlacement() (string, application.Rect) {
 
 // bubblePlacement 根据桌宠可见身体与工作区计算气泡位置，纯函数便于测试。
 func bubblePlacement(mascot, area application.Rect) (string, application.Rect) {
-	inset := int(math.Round(float64(mascot.Width) * mascotBodyInsetRatio))
+	inset := mascotBodyInset(mascot.Width, mascot.Height)
 	visibleLeft := mascot.X + inset
 	visibleRight := mascot.X + mascot.Width - inset
 
@@ -612,4 +614,11 @@ func bubblePlacement(mascot, area application.Rect) (string, application.Rect) {
 	}
 
 	return side, application.Rect{X: x, Y: y, Width: bubbleWidth, Height: bubbleHeight}
+}
+
+// mascotBodyInset 计算 SVG 等比缩放后的左右留白与身体左边缘之和。
+func mascotBodyInset(width, height int) int {
+	scale := math.Min(float64(width)/mascotViewBoxWidth, float64(height)/mascotViewBoxHeight)
+	letterbox := (float64(width) - mascotViewBoxWidth*scale) / 2
+	return int(math.Round(letterbox + mascotBodyLeft*scale))
 }

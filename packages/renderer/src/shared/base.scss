@@ -5,10 +5,19 @@
   --puck-cream: #fbf7ef;
   --puck-card: #ffffff;
   --puck-ink: #17342d;
-  --puck-muted: #6b7f79;
+  --puck-muted: #596c65;
   --puck-line: rgba(23, 52, 45, 0.12);
   --puck-surface: #ffffff;
   --puck-surface-soft: #fffdf9;
+  --puck-panel: rgba(255, 255, 255, 0.45);
+  --puck-panel-soft: rgba(255, 255, 255, 0.42);
+  --puck-warning: #8a6414;
+  --puck-warning-soft: rgba(255, 209, 102, 0.26);
+  --puck-danger: #9a3535;
+  --puck-danger-soft: rgba(255, 143, 143, 0.18);
+  --puck-selection: rgba(63, 201, 165, 0.28);
+  --puck-scrollbar: rgba(23, 52, 45, 0.2);
+  --puck-scrollbar-hover: rgba(23, 52, 45, 0.32);
   color-scheme: light;
   font-family:
     'SF Pro Rounded',
@@ -22,16 +31,25 @@
 }
 
 html.dark {
-  --puck-mint: #3fc9a5;
-  --puck-mint-deep: #7fe6c7;
-  --puck-mint-soft: #1d3b32;
-  --puck-cream: #121715;
-  --puck-card: #1b221f;
-  --puck-ink: #e9f3ef;
-  --puck-muted: #9fb1aa;
-  --puck-line: rgba(233, 243, 239, 0.14);
-  --puck-surface: #1f2623;
-  --puck-surface-soft: #1c2320;
+  --puck-mint: #5fd8b4;
+  --puck-mint-deep: #9bead4;
+  --puck-mint-soft: #213a32;
+  --puck-cream: #1a1511;
+  --puck-card: #241e18;
+  --puck-ink: #f7f2e9;
+  --puck-muted: #b9ab9b;
+  --puck-line: rgba(247, 242, 233, 0.12);
+  --puck-surface: #2d261f;
+  --puck-surface-soft: #362e25;
+  --puck-panel: #2a231d;
+  --puck-panel-soft: #241e18;
+  --puck-warning: #f2c76d;
+  --puck-warning-soft: rgba(242, 199, 109, 0.14);
+  --puck-danger: #ff9d9d;
+  --puck-danger-soft: rgba(255, 157, 157, 0.12);
+  --puck-selection: rgba(95, 216, 180, 0.28);
+  --puck-scrollbar: rgba(247, 242, 233, 0.28);
+  --puck-scrollbar-hover: rgba(247, 242, 233, 0.4);
   color-scheme: dark;
 }
 
@@ -83,4 +101,40 @@ body.settings-body {
 
 button {
   font: inherit;
+}
+
+::selection {
+  background: var(--puck-selection);
+  color: var(--puck-ink);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--puck-scrollbar) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: var(--puck-scrollbar);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--puck-scrollbar-hover);
+  background-clip: content-box;
+}
+
+input,
+textarea {
+  caret-color: var(--puck-mint-deep);
 }

@@ -58,11 +58,24 @@ const streamingMessageId = computed(() => {
 const themeConfig = computed(() => ({
   algorithm: isDark.value ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
   token: {
-    colorPrimary: '#35bd98',
-    colorText: isDark.value ? '#e9f3ef' : '#17342d',
-    colorTextSecondary: isDark.value ? '#9fb1aa' : '#6b7f79',
-    colorBgContainer: isDark.value ? '#1f2623' : '#ffffff',
-    colorBorder: isDark.value ? 'rgba(233, 243, 239, 0.14)' : 'rgba(23, 52, 45, 0.12)',
+    colorPrimary: isDark.value ? '#5fd8b4' : '#35bd98',
+    colorText: isDark.value ? '#f7f2e9' : '#17342d',
+    colorTextSecondary: isDark.value ? '#b9ab9b' : '#6b7f79',
+    colorTextDescription: isDark.value ? '#b9ab9b' : '#6b7f79',
+    colorTextPlaceholder: isDark.value ? '#b9ab9b' : '#6b7f79',
+    colorBgLayout: isDark.value ? '#1a1511' : '#fbf7ef',
+    colorBgContainer: isDark.value ? '#2d261f' : '#ffffff',
+    colorBgElevated: isDark.value ? '#362e25' : '#ffffff',
+    colorBorder: isDark.value ? 'rgba(247, 242, 233, 0.12)' : 'rgba(23, 52, 45, 0.12)',
+    colorBorderSecondary: isDark.value
+      ? 'rgba(247, 242, 233, 0.08)'
+      : 'rgba(23, 52, 45, 0.08)',
+    colorFillSecondary: isDark.value
+      ? 'rgba(247, 242, 233, 0.06)'
+      : 'rgba(23, 52, 45, 0.06)',
+    colorFillTertiary: isDark.value
+      ? 'rgba(247, 242, 233, 0.04)'
+      : 'rgba(23, 52, 45, 0.04)',
     borderRadius: 12,
     fontFamily:
       "'SF Pro Rounded', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif",
@@ -111,7 +124,7 @@ const bubbleItems = computed<BubbleItemType[]>(() => {
                       'button',
                       {
                         class:
-                          'rounded-md px-1.5 py-0.5 text-xs text-puck-muted transition-colors hover:bg-puck-mint/12 hover:text-puck-mint-deep',
+                          'rounded-md px-1.5 py-0.5 text-xs text-puck-ink transition-colors hover:bg-puck-mint/12 hover:text-puck-mint-deep',
                         type: 'button',
                         onClick: () => void copyText(message.text),
                       },
@@ -250,24 +263,9 @@ function applyConversationProvider(conversationID: string) {
   selectedProviderId.value = activeProviderId.value || providers.value[0]?.id || ''
 }
 
-const modelPicker = computed(() => {
-  if (providers.value.length === 0) return false
-  return h(
-    'select',
-    {
-      class:
-        'h-7 max-w-[200px] cursor-pointer rounded-lg bg-puck-mint/12 px-1.5 text-xs font-semibold text-puck-mint-deep outline-none hover:bg-puck-mint/20',
-      value: selectedProviderId.value,
-      title: '切换当前对话使用的模型',
-      onChange: (event: Event) => {
-        selectedProviderId.value = (event.target as HTMLSelectElement).value
-      },
-    },
-    providers.value.map((provider) =>
-      h('option', { value: provider.id }, providerLabel(provider)),
-    ),
-  )
-})
+function onProviderSelect(event: Event) {
+  selectedProviderId.value = (event.target as HTMLSelectElement).value
+}
 
 async function openConversation(id: string) {
   const epoch = ++viewEpoch
@@ -401,7 +399,7 @@ onBeforeUnmount(() => {
   <XProvider :theme="themeConfig">
     <div class="flex h-full w-full flex-col">
       <header
-        class="flex items-center justify-between gap-4 border-b border-puck-line px-6 pb-4 pl-[88px] pt-[18px] [-webkit-app-region:drag]"
+        class="chat-header flex items-center justify-between gap-4 border-b border-puck-line px-6 pb-4 pl-[88px] pt-[18px] [-webkit-app-region:drag]"
       >
         <div class="flex items-center gap-3">
           <PuckAvatar
@@ -415,7 +413,7 @@ onBeforeUnmount(() => {
         <div class="flex items-center gap-2 [-webkit-app-region:no-drag]">
           <button
             type="button"
-            class="grid h-8 w-8 place-items-center rounded-full border border-puck-line bg-white/60 text-puck-ink transition-colors hover:bg-white dark:bg-white/10 dark:hover:bg-white/15"
+            class="grid h-8 w-8 place-items-center rounded-full border border-puck-line bg-white/60 text-puck-ink transition-colors hover:bg-white dark:bg-puck-surface dark:hover:bg-puck-surface-soft"
             title="切换亮暗主题"
             @click="toggleTheme"
           >
@@ -449,7 +447,9 @@ onBeforeUnmount(() => {
           <span
             class="rounded-full px-2.5 py-[5px] text-xs font-semibold"
             :class="
-              pending ? 'bg-[#ffd166]/25 text-[#8a6414]' : 'bg-puck-mint/12 text-puck-mint-deep'
+              pending
+                ? 'bg-puck-warning-soft text-puck-warning'
+                : 'bg-puck-mint/12 text-puck-mint-deep'
             "
             >{{ pending ? '在想…' : '在线' }}</span
           >
@@ -458,7 +458,7 @@ onBeforeUnmount(() => {
 
       <div class="flex min-h-0 flex-1">
         <aside
-          class="flex min-h-0 w-[210px] flex-none flex-col overflow-hidden border-r border-puck-line bg-white/45 p-2.5 dark:bg-white/[0.04]"
+          class="chat-sidebar flex min-h-0 w-[210px] flex-none flex-col overflow-hidden border-r border-puck-line bg-white/45 p-2.5"
         >
           <Conversations
             class="history-conversations min-h-0 flex-1"
@@ -501,23 +501,77 @@ onBeforeUnmount(() => {
 
           <p
             v-if="errorText"
-            class="m-0 bg-[#ff8f8f]/18 px-6 py-2.5 text-xs text-[#9a3535] dark:bg-[#ff8f8f]/12 dark:text-[#ffb4b4]"
+            class="m-0 bg-puck-danger-soft px-6 py-2.5 text-xs text-puck-danger"
           >
             {{ errorText }}
           </p>
 
           <footer
-            class="composer w-full border-t border-puck-line bg-white/42 px-6 pb-[18px] pt-3.5 dark:bg-white/[0.03]"
+            class="composer w-full border-t border-puck-line bg-white/42 px-6 pb-[18px] pt-3.5"
           >
             <Sender
               :value="input"
               :loading="pending"
               placeholder="跟 Puck 说点什么…"
-              :auto-size="{ minRows: 4, maxRows: 8 }"
-              :prefix="modelPicker"
+              :auto-size="{ minRows: 3, maxRows: 8 }"
+              :actions="false"
               :on-change="onSenderChange"
               :on-submit="send"
-            />
+            >
+              <template #footer>
+                <div class="flex items-center justify-between gap-3">
+                  <select
+                    v-if="providers.length"
+                    class="h-8 max-w-[220px] cursor-pointer rounded-lg bg-puck-mint/12 px-2 text-xs font-semibold text-puck-mint-deep outline-none hover:bg-puck-mint/20"
+                    :value="selectedProviderId"
+                    title="切换当前对话使用的模型"
+                    @change="onProviderSelect"
+                  >
+                    <option
+                      v-for="provider in providers"
+                      :key="provider.id"
+                      :value="provider.id"
+                    >
+                      {{ providerLabel(provider) }}
+                    </option>
+                  </select>
+                  <span v-else class="text-xs text-puck-muted">未配置模型</span>
+                  <button
+                    type="button"
+                    class="sender-send-btn"
+                    :class="{ 'sender-send-btn-loading': pending }"
+                    :disabled="pending || !input.trim()"
+                    :title="pending ? '正在回复' : '发送'"
+                    @click="send()"
+                  >
+                    <svg
+                      v-if="pending"
+                      class="h-5 w-5 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <circle class="opacity-25" cx="12" cy="12" r="9" />
+                      <path class="opacity-90" d="M21 12a9 9 0 0 0-9-9" />
+                    </svg>
+                    <svg
+                      v-else
+                      class="h-5 w-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M12 19V5" />
+                      <path d="m5 12 7-7 7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </template>
+            </Sender>
           </footer>
         </section>
       </div>
@@ -525,7 +579,7 @@ onBeforeUnmount(() => {
       <transition name="toast">
         <div
           v-if="toast"
-          class="pointer-events-none fixed bottom-[98px] left-1/2 z-20 -translate-x-1/2 rounded-full bg-[#17342d]/86 px-3.5 py-2 text-xs text-white dark:bg-[#e9f3ef] dark:text-[#17342d]"
+          class="pointer-events-none fixed bottom-[98px] left-1/2 z-20 -translate-x-1/2 rounded-full bg-puck-ink px-3.5 py-2 text-xs text-puck-cream"
         >
           {{ toast }}
         </div>

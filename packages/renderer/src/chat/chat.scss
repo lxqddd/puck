@@ -6,8 +6,17 @@ body.chat-body {
 
 html.dark body.chat-body {
   background:
-    radial-gradient(circle at 8% -10%, rgba(63, 201, 165, 0.12), transparent 45%),
+    radial-gradient(circle at 8% -10%, rgba(95, 216, 180, 0.14), transparent 44%),
+    radial-gradient(circle at 92% -4%, rgba(242, 199, 109, 0.07), transparent 38%),
     var(--puck-cream);
+}
+
+html.dark .chat-header {
+  background: var(--puck-panel-soft);
+}
+
+html.dark .chat-sidebar {
+  background: var(--puck-panel);
 }
 
 // Ant Design X 的组件内部结构无法直接用工具类覆盖，集中放在 Sass 里。
@@ -24,7 +33,7 @@ html.dark body.chat-body {
   }
 
   .ant-conversations-item-active {
-    background: rgba(63, 201, 165, 0.16);
+    background: color-mix(in srgb, var(--puck-mint) 16%, transparent);
     color: var(--puck-mint-deep);
     font-weight: 600;
   }
@@ -32,6 +41,64 @@ html.dark body.chat-body {
   .ant-conversations-creation {
     color: var(--puck-mint-deep);
     font-weight: 600;
+  }
+}
+
+html.dark .history-conversations {
+  .ant-conversations-item:hover {
+    background: rgba(245, 240, 231, 0.05);
+  }
+
+  .ant-conversations-creation {
+    border: 1px solid var(--puck-line);
+    background: var(--puck-mint-soft);
+  }
+}
+
+.ant-welcome-title {
+  color: var(--puck-ink);
+}
+
+.ant-prompts-title,
+.ant-welcome-description {
+  color: var(--puck-muted);
+}
+
+html.dark {
+  .ant-prompts .ant-prompts-item {
+    border-color: var(--puck-line);
+    background: var(--puck-surface);
+    color: var(--puck-ink);
+  }
+
+  .ant-prompts .ant-prompts-item:hover {
+    border-color: color-mix(in srgb, var(--puck-mint) 35%, var(--puck-line));
+    background: var(--puck-surface-soft);
+  }
+
+  .ant-prompts .ant-prompts-label {
+    color: var(--puck-ink);
+  }
+
+  .ant-prompts .ant-prompts-desc {
+    color: var(--puck-muted);
+  }
+
+  .ant-dropdown-menu {
+    border: 1px solid var(--puck-line);
+    background: var(--puck-surface);
+  }
+
+  .ant-dropdown-menu-item {
+    color: var(--puck-ink);
+  }
+
+  .ant-dropdown-menu-item:hover {
+    background: var(--puck-surface-soft);
+  }
+
+  .ant-dropdown-menu-item-danger {
+    color: var(--puck-danger);
   }
 }
 
@@ -47,6 +114,12 @@ html.dark body.chat-body {
     word-break: break-word;
   }
 
+  .ant-bubble-end .ant-bubble-content::selection,
+  .ant-bubble-end .ant-bubble-content *::selection {
+    background: rgba(16, 36, 29, 0.22);
+    color: #10241d;
+  }
+
   .ant-bubble-start .ant-bubble-content {
     background: var(--puck-surface);
     color: var(--puck-ink);
@@ -54,8 +127,9 @@ html.dark body.chat-body {
   }
 
   .ant-bubble-end .ant-bubble-content {
-    background: linear-gradient(160deg, #4fd0ac, #2fae8c);
-    color: #ffffff;
+    background: linear-gradient(160deg, #5bd8b4, #2fa987);
+    color: #10241d;
+    font-weight: 500;
   }
 
   .ant-bubble-footer {
@@ -63,11 +137,12 @@ html.dark body.chat-body {
   }
 
   .ant-actions {
-    opacity: 0.6;
+    opacity: 0.8;
     transition: opacity 0.15s ease;
   }
 
-  .ant-bubble:hover .ant-actions {
+  .ant-bubble:hover .ant-actions,
+  .ant-bubble:focus-within .ant-actions {
     opacity: 1;
   }
 
@@ -77,8 +152,21 @@ html.dark body.chat-body {
   }
 }
 
-html.dark .bubble-list .ant-bubble-start .ant-bubble-content {
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+html.dark .bubble-list {
+  .ant-bubble-start .ant-bubble-content {
+    border: 1px solid var(--puck-line);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+  }
+
+  .ant-bubble-end .ant-bubble-content {
+    background: linear-gradient(160deg, #7be8c8, #40c39f);
+    color: #10241d;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  }
+
+  .ant-think {
+    border: 1px solid var(--puck-line);
+  }
 }
 
 .composer {
@@ -90,9 +178,9 @@ html.dark .bubble-list .ant-bubble-start .ant-bubble-content {
     box-shadow: 0 10px 26px rgba(23, 52, 45, 0.08);
 
     &:focus-within {
-      border-color: rgba(63, 201, 165, 0.6);
+      border-color: color-mix(in srgb, var(--puck-mint) 60%, transparent);
       box-shadow:
-        0 0 0 3px rgba(63, 201, 165, 0.12),
+        0 0 0 3px color-mix(in srgb, var(--puck-mint) 14%, transparent),
         0 10px 26px rgba(23, 52, 45, 0.08);
     }
   }
@@ -118,43 +206,69 @@ html.dark .bubble-list .ant-bubble-start .ant-bubble-content {
     caret-color: var(--puck-mint-deep);
   }
 
-  .ant-sender-actions-btn {
+  .ant-sender-footer {
+    padding: 0 14px 12px;
+  }
+
+  .sender-send-btn {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
     width: 38px;
     height: 38px;
     border: none;
     border-radius: 50%;
-    background: linear-gradient(160deg, #4fd0ac, #2fae8c) !important;
-    color: #ffffff !important;
-    box-shadow: 0 6px 14px rgba(53, 189, 152, 0.28);
+    background: linear-gradient(160deg, #5bd8b4, #2fa987);
+    color: #10241d;
+    cursor: pointer;
+    box-shadow: 0 6px 14px rgba(53, 189, 152, 0.24);
+    transition:
+      filter 0.15s ease,
+      opacity 0.15s ease;
 
-    &:hover {
-      background: linear-gradient(160deg, #5ad9b5, #33b894) !important;
+    &:hover:not(:disabled) {
+      filter: brightness(1.06);
     }
 
-    &:disabled,
-    &.ant-sender-actions-btn-disabled {
-      background: #eef1ec !important;
-      color: #a9b6af !important;
+    &:disabled {
+      cursor: not-allowed;
+      background: color-mix(in srgb, var(--puck-ink) 8%, transparent);
+      color: var(--puck-muted);
       box-shadow: none;
-      opacity: 1 !important;
+    }
+
+    &.sender-send-btn-loading:disabled {
+      cursor: default;
+      background: linear-gradient(160deg, #5bd8b4, #2fa987);
+      color: #10241d;
+      box-shadow: 0 6px 14px rgba(53, 189, 152, 0.24);
+    }
+
+    svg {
+      width: 20px;
+      height: 20px;
     }
   }
 }
 
-html.dark .composer .ant-sender {
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
+html.dark .composer {
+  background: var(--puck-panel-soft);
 
-  &:focus-within {
-    box-shadow:
-      0 0 0 3px rgba(63, 201, 165, 0.16),
-      0 10px 26px rgba(0, 0, 0, 0.28);
+  .ant-sender {
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+
+    &:focus-within {
+      box-shadow:
+        0 0 0 3px rgba(95, 216, 180, 0.16),
+        0 12px 30px rgba(0, 0, 0, 0.35);
+    }
   }
-}
 
-html.dark .composer .ant-sender-actions-btn:disabled,
-html.dark .composer .ant-sender-actions-btn.ant-sender-actions-btn-disabled {
-  background: #2a322e !important;
-  color: #7d8a84 !important;
+  .sender-send-btn:not(:disabled),
+  .sender-send-btn-loading:disabled {
+    box-shadow: 0 6px 16px rgba(95, 216, 180, 0.18);
+  }
 }
 
 .toast-enter-active,

@@ -7,7 +7,15 @@ body.settings-body {
 
 html.dark body.settings-body {
   background:
-    radial-gradient(circle at 90% -10%, rgba(255, 209, 102, 0.08), transparent 45%),
-    radial-gradient(circle at 8% -10%, rgba(63, 201, 165, 0.1), transparent 45%),
+    radial-gradient(circle at 90% -10%, rgba(242, 199, 109, 0.1), transparent 45%),
+    radial-gradient(circle at 8% -10%, rgba(95, 216, 180, 0.14), transparent 45%),
     var(--puck-cream);
+}
+
+html.dark .settings-header {
+  background: var(--puck-panel-soft);
+}
+
+html.dark .settings-rail {
+  background: var(--puck-panel);
 }

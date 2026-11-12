@@ -16,6 +16,14 @@
   --color-puck-ink: var(--puck-ink);
   --color-puck-muted: var(--puck-muted);
   --color-puck-line: var(--puck-line);
+  --color-puck-surface: var(--puck-surface);
+  --color-puck-surface-soft: var(--puck-surface-soft);
+  --color-puck-panel: var(--puck-panel);
+  --color-puck-panel-soft: var(--puck-panel-soft);
+  --color-puck-warning: var(--puck-warning);
+  --color-puck-warning-soft: var(--puck-warning-soft);
+  --color-puck-danger: var(--puck-danger);
+  --color-puck-danger-soft: var(--puck-danger-soft);
 
   --font-sans:
     'SF Pro Rounded', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui,

@@ -18,5 +18,5 @@
       "working": "working"
     }
   },
-  "hitAreas": [{ "id": "body", "x": 40, "y": 48, "width": 280, "height": 340 }]
+  "hitAreas": [{ "id": "body", "x": 76, "y": 48, "width": 208, "height": 340 }]
 }

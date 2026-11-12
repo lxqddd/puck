@@ -22,21 +22,23 @@ body.bubble-body {
 
 .puck-bubble {
   position: relative;
-  display: -webkit-box;
   max-width: 220px;
-  max-height: 100px;
   padding: 10px 14px;
-  overflow: hidden;
   border-radius: 14px;
   background: var(--puck-surface);
   color: var(--puck-ink);
   font-size: 13px;
   line-height: 1.5;
+  box-shadow: 0 6px 18px rgba(23, 52, 45, 0.18);
+}
+
+.puck-bubble-text {
+  display: -webkit-box;
+  overflow: hidden;
   white-space: pre-wrap;
   word-break: break-word;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
-  box-shadow: 0 6px 18px rgba(23, 52, 45, 0.18);
 }
 
 .puck-bubble::after {

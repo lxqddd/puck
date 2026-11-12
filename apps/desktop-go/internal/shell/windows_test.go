@@ -80,6 +80,23 @@ func TestBottomRightPosition(t *testing.T) {
 	}
 }
 
+func TestMascotBodyInset(t *testing.T) {
+	cases := []struct {
+		width, height int
+		want          int
+	}{
+		{width: 179, height: 209, want: 38},
+		{width: 180, height: 210, want: 38},
+		{width: 360, height: 420, want: 76},
+		{width: 540, height: 630, want: 115},
+	}
+	for _, tc := range cases {
+		if got := mascotBodyInset(tc.width, tc.height); got != tc.want {
+			t.Fatalf("mascotBodyInset(%d,%d) = %d, want %d", tc.width, tc.height, got, tc.want)
+		}
+	}
+}
+
 func TestBubblePlacement(t *testing.T) {
 	area := application.Rect{X: 0, Y: 30, Width: 1792, Height: 1090}
 	cases := []struct {
@@ -95,7 +112,7 @@ func TestBubblePlacement(t *testing.T) {
 			mascot:   application.Rect{X: 1596, Y: 886, Width: 179, Height: 209},
 			area:     area,
 			wantSide: "left",
-			wantX:    1369,
+			wantX:    1373,
 			wantY:    889,
 		},
 		{
@@ -103,7 +120,7 @@ func TestBubblePlacement(t *testing.T) {
 			mascot:   application.Rect{X: 40, Y: 500, Width: 179, Height: 210},
 			area:     area,
 			wantSide: "right",
-			wantX:    186,
+			wantX:    182,
 			wantY:    503,
 		},
 		{
@@ -119,7 +136,7 @@ func TestBubblePlacement(t *testing.T) {
 			mascot:   application.Rect{X: -2440, Y: 600, Width: 180, Height: 210},
 			area:     application.Rect{X: -2560, Y: 0, Width: 2560, Height: 1440},
 			wantSide: "right",
-			wantX:    -2294,
+			wantX:    -2297,
 			wantY:    603,
 		},
 		{
@@ -127,7 +144,7 @@ func TestBubblePlacement(t *testing.T) {
 			mascot:   application.Rect{X: 1200, Y: 500, Width: 540, Height: 630},
 			area:     area,
 			wantSide: "left",
-			wantX:    1043,
+			wantX:    1054,
 			wantY:    650,
 		},
 	}

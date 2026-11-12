@@ -44,7 +44,7 @@ onBeforeUnmount(() => unsubscribe?.())
         class="puck-bubble"
         :class="side === 'left' ? 'puck-bubble-left' : 'puck-bubble-right'"
       >
-        {{ text }}
+        <span class="puck-bubble-text">{{ text }}</span>
       </div>
     </transition>
   </div>
