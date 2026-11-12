@@ -5,6 +5,7 @@ packages:
   - '!packages/**/dist'
 
 allowBuilds:
+  '@parcel/watcher': false
   core-js: false
 
 minimumReleaseAgeExclude:

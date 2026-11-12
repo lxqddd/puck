@@ -1,0 +1,21 @@
+@layer theme, base, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+@source '../**/*.{vue,ts,html}';
+
+@theme {
+  --color-puck-mint: #3fc9a5;
+  --color-puck-mint-deep: #1d6b57;
+  --color-puck-mint-soft: #d9fff3;
+  --color-puck-cream: #fbf7ef;
+  --color-puck-card: #ffffff;
+  --color-puck-ink: #17342d;
+  --color-puck-muted: #6b7f79;
+  --color-puck-line: rgba(23, 52, 45, 0.12);
+
+  --font-sans:
+    'SF Pro Rounded', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui,
+    sans-serif;
+}

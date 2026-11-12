@@ -1,0 +1,145 @@
+body.chat-body {
+  background:
+    radial-gradient(circle at 8% -10%, rgba(63, 201, 165, 0.22), transparent 45%),
+    var(--puck-cream);
+}
+
+// Ant Design X 的组件内部结构无法直接用工具类覆盖，集中放在 Sass 里。
+.history-conversations {
+  .ant-conversations {
+    height: 100%;
+    background: transparent;
+    font-size: 13px;
+  }
+
+  .ant-conversations-item {
+    border-radius: 10px;
+    color: var(--puck-ink);
+  }
+
+  .ant-conversations-item-active {
+    background: rgba(63, 201, 165, 0.16);
+    color: var(--puck-mint-deep);
+    font-weight: 600;
+  }
+
+  .ant-conversations-creation {
+    color: var(--puck-mint-deep);
+    font-weight: 600;
+  }
+}
+
+.bubble-list {
+  .ant-bubble-list-scroll-box {
+    padding: 20px 24px;
+  }
+
+  .ant-bubble-content {
+    font-size: 14px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .ant-bubble-start .ant-bubble-content {
+    background: #ffffff;
+    color: var(--puck-ink);
+    box-shadow: 0 2px 10px rgba(23, 52, 45, 0.06);
+  }
+
+  .ant-bubble-end .ant-bubble-content {
+    background: linear-gradient(160deg, #4fd0ac, #2fae8c);
+    color: #ffffff;
+  }
+
+  .ant-bubble-footer {
+    margin-top: 4px;
+  }
+
+  .ant-actions {
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+  }
+
+  .ant-bubble:hover .ant-actions {
+    opacity: 1;
+  }
+
+  .ant-think {
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.6);
+  }
+}
+
+.composer {
+  .ant-sender {
+    width: 100%;
+    background: #fffdf9;
+    border-color: var(--puck-line);
+    border-radius: 20px;
+    box-shadow: 0 10px 26px rgba(23, 52, 45, 0.08);
+
+    &:focus-within {
+      border-color: rgba(63, 201, 165, 0.6);
+      box-shadow:
+        0 0 0 3px rgba(63, 201, 165, 0.12),
+        0 10px 26px rgba(23, 52, 45, 0.08);
+    }
+  }
+
+  .ant-sender-content {
+    align-items: flex-end;
+    padding: 14px 14px 12px;
+  }
+
+  .ant-sender-input,
+  textarea {
+    background: transparent;
+    color: var(--puck-ink);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  textarea::placeholder {
+    color: var(--puck-muted);
+  }
+
+  .ant-sender-input {
+    caret-color: var(--puck-mint-deep);
+  }
+
+  .ant-sender-actions-btn {
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: 50%;
+    background: linear-gradient(160deg, #4fd0ac, #2fae8c) !important;
+    color: #ffffff !important;
+    box-shadow: 0 6px 14px rgba(53, 189, 152, 0.28);
+
+    &:hover {
+      background: linear-gradient(160deg, #5ad9b5, #33b894) !important;
+    }
+
+    &:disabled,
+    &.ant-sender-actions-btn-disabled {
+      background: #eef1ec !important;
+      color: #a9b6af !important;
+      box-shadow: none;
+      opacity: 1 !important;
+    }
+  }
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 4px);
+}

@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import SettingsApp from './SettingsApp.vue'
-import '../shared/base.css'
-import './settings.css'
+import '../shared/tailwind.css'
+import '../shared/base.scss'
+import './settings.scss'
 
 createApp(SettingsApp).mount('#app')

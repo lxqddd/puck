@@ -247,10 +247,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="mascot-window">
+  <div class="relative h-full w-full overflow-hidden">
     <div
       ref="stage"
-      class="avatar-stage"
+      class="avatar-stage absolute inset-0 cursor-grab touch-none [-webkit-tap-highlight-color:transparent] active:cursor-grabbing"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
       @pointerup="onPointerUp"
@@ -258,7 +258,11 @@ onBeforeUnmount(() => {
       @click="onClick"
       @dblclick="onDoubleClick"
     >
-      <svg viewBox="0 0 240 300" class="puck" aria-label="Puck，桌角的小精灵">
+      <svg
+        viewBox="0 0 240 300"
+        class="puck block h-full w-full origin-[50%_90%] drop-shadow-[0_12px_20px_rgba(29,107,87,0.16)]"
+        aria-label="Puck，桌角的小精灵"
+      >
         <defs>
           <linearGradient id="puck-body" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stop-color="#86eccb" />

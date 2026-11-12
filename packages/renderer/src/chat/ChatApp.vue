@@ -63,7 +63,14 @@ const themeConfig = {
   },
 }
 
-const puckAvatar = h('span', { class: 'bubble-avatar' }, 'P')
+const puckAvatar = h(
+  'span',
+  {
+    class:
+      'grid h-[30px] w-[30px] place-items-center rounded-full bg-gradient-to-br from-[#86eccb] to-[#35bd98] text-[13px] font-bold text-white',
+  },
+  'P',
+)
 
 const roles: RoleType = {
   ai: {
@@ -100,7 +107,8 @@ const bubbleItems = computed<BubbleItemType[]>(() => {
                     h(
                       'button',
                       {
-                        class: 'bubble-copy',
+                        class:
+                          'rounded-md px-1.5 py-0.5 text-xs text-puck-muted transition-colors hover:bg-puck-mint/12 hover:text-puck-mint-deep',
                         type: 'button',
                         onClick: () => void copyText(message.text),
                       },
@@ -119,7 +127,14 @@ const promptItems: PromptProps[] = suggestions.map((text, index) => ({
   label: text,
 }))
 
-const welcomeIcon = h('span', { class: 'welcome-orb' }, 'P')
+const welcomeIcon = h(
+  'span',
+  {
+    class:
+      'grid h-16 w-16 place-items-center rounded-[22px] bg-gradient-to-br from-[#86eccb] to-[#35bd98] text-[28px] font-bold text-white shadow-[0_12px_28px_rgba(53,189,152,0.35)]',
+  },
+  'P',
+)
 
 const conversationItems = computed(() =>
   conversations.value.map((conversation) => ({
@@ -242,7 +257,8 @@ const modelPicker = computed(() => {
   return h(
     'select',
     {
-      class: 'model-picker',
+      class:
+        'h-7 max-w-[200px] cursor-pointer rounded-lg bg-puck-mint/12 px-1.5 text-xs font-semibold text-puck-mint-deep outline-none hover:bg-puck-mint/20',
       value: selectedProviderId.value,
       title: '切换当前对话使用的模型',
       onChange: (event: Event) => {
@@ -385,22 +401,35 @@ onBeforeUnmount(() => {
 
 <template>
   <XProvider :theme="themeConfig">
-    <div class="chat-app">
-      <header class="chat-header">
-        <div class="chat-identity">
-          <span class="chat-avatar">P</span>
+    <div class="flex h-full w-full flex-col">
+      <header
+        class="flex items-center justify-between gap-4 border-b border-puck-line px-6 pb-4 pl-[88px] pt-[18px] [-webkit-app-region:drag]"
+      >
+        <div class="flex items-center gap-3">
+          <span
+            class="grid h-[38px] w-[38px] place-items-center rounded-full bg-gradient-to-br from-[#86eccb] to-[#35bd98] text-[17px] font-bold text-white shadow-[0_4px_10px_rgba(53,189,152,0.35)]"
+            >P</span
+          >
           <div>
-            <h1>Puck</h1>
-            <p>住在你桌角的小伙伴</p>
+            <h1 class="m-0 text-base font-bold tracking-[0.2px]">Puck</h1>
+            <p class="mb-0 mt-0.5 text-xs text-puck-muted">住在你桌角的小伙伴</p>
           </div>
         </div>
-        <span class="chat-status" :data-busy="pending">{{ pending ? '在想…' : '在线' }}</span>
+        <span
+          class="rounded-full px-2.5 py-[5px] text-xs font-semibold"
+          :class="
+            pending ? 'bg-[#ffd166]/25 text-[#8a6414]' : 'bg-puck-mint/12 text-puck-mint-deep'
+          "
+          >{{ pending ? '在想…' : '在线' }}</span
+        >
       </header>
 
-      <div class="chat-body">
-        <aside class="history-sidebar">
+      <div class="flex min-h-0 flex-1">
+        <aside
+          class="flex min-h-0 w-[210px] flex-none flex-col overflow-hidden border-r border-puck-line bg-white/45 p-2.5"
+        >
           <Conversations
-            class="history-conversations"
+            class="history-conversations min-h-0 flex-1"
             :items="conversationItems"
             :active-key="activeConversationId"
             :on-active-change="openConversation"
@@ -410,9 +439,12 @@ onBeforeUnmount(() => {
           />
         </aside>
 
-        <section class="chat-main">
-          <main class="message-list">
-            <div v-if="messages.length === 0" class="empty-state">
+        <section class="flex min-w-0 flex-1 flex-col">
+          <main class="flex min-h-0 flex-1 flex-col">
+            <div
+              v-if="messages.length === 0"
+              class="flex flex-1 flex-col items-center justify-center gap-[18px] overflow-y-auto px-6 py-8 text-center [&_.ant-prompts]:w-full [&_.ant-prompts]:max-w-[420px] [&_.ant-prompts]:text-left [&_.ant-welcome]:w-full [&_.ant-welcome]:max-w-[420px]"
+            >
               <Welcome
                 :icon="welcomeIcon"
                 title="和 Puck 聊点什么吧"
@@ -428,21 +460,23 @@ onBeforeUnmount(() => {
             </div>
             <Bubble.List
               v-else
-              class="bubble-list"
+              class="bubble-list min-h-0 flex-1"
               :items="bubbleItems"
               :roles="roles"
               :auto-scroll="true"
             />
           </main>
 
-          <p v-if="errorText" class="error-bar">{{ errorText }}</p>
+          <p v-if="errorText" class="m-0 bg-[#ff8f8f]/18 px-6 py-2.5 text-xs text-[#9a3535]">
+            {{ errorText }}
+          </p>
 
-          <footer class="composer">
+          <footer class="composer w-full border-t border-puck-line bg-white/42 px-6 pb-[18px] pt-3.5">
             <Sender
               :value="input"
               :loading="pending"
               placeholder="跟 Puck 说点什么…"
-              :auto-size="{ minRows: 1, maxRows: 6 }"
+              :auto-size="{ minRows: 4, maxRows: 8 }"
               :prefix="modelPicker"
               :on-change="onSenderChange"
               :on-submit="send"
@@ -452,7 +486,12 @@ onBeforeUnmount(() => {
       </div>
 
       <transition name="toast">
-        <div v-if="toast" class="copy-toast">{{ toast }}</div>
+        <div
+          v-if="toast"
+          class="pointer-events-none fixed bottom-[98px] left-1/2 z-20 -translate-x-1/2 rounded-full bg-[#17342d]/86 px-3.5 py-2 text-xs text-white"
+        >
+          {{ toast }}
+        </div>
       </transition>
     </div>
   </XProvider>

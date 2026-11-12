@@ -1,34 +1,3 @@
-body.mascot-body {
-  background: transparent;
-}
-
-.mascot-window {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.avatar-stage {
-  position: absolute;
-  inset: 0;
-  cursor: grab;
-  touch-action: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.avatar-stage:active {
-  cursor: grabbing;
-}
-
-.puck {
-  display: block;
-  width: 100%;
-  height: 100%;
-  filter: drop-shadow(0 12px 20px rgba(29, 107, 87, 0.16));
-  transform-origin: 50% 90%;
-}
-
 .avatar-stage[data-render='rive'] .puck {
   display: none;
 }
