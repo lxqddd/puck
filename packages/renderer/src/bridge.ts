@@ -5,11 +5,15 @@ import type {
   ChatDoneEvent,
   ChatErrorEvent,
   ChatStateEvent,
+  Conversation,
   MascotScaleEvent,
+  ProviderConfig,
+  SendResult,
+  Settings,
+  StoredMessage,
 } from '@puck/contract'
 import { ChatService, MascotService, SettingsService } from './bindings/puck/internal/services'
 import type { Position } from './bindings/puck/internal/services'
-import type { Settings } from './bindings/puck/internal/store/models'
 
 function subscribe<T>(name: string, callback: (data: T) => void): () => void {
   return Events.On(name, (event) => callback(event.data as T))
@@ -30,10 +34,28 @@ export const bridge = {
   scaleBy: (delta: number): Promise<number> => MascotService.ScaleBy(delta),
 
   setPersona: (prompt: string) => ChatService.SetPersona(prompt),
-  sendChat: (text: string): Promise<string> => ChatService.Send(text),
+  sendChat: (text: string, conversationId: string): Promise<SendResult> =>
+    ChatService.Send(text, conversationId),
+  listConversations: async (): Promise<Conversation[]> => (await ChatService.ListConversations()) ?? [],
+  getMessages: async (conversationId: string): Promise<StoredMessage[]> =>
+    ((await ChatService.GetMessages(conversationId)) ?? []) as StoredMessage[],
+  deleteConversation: (conversationId: string) => ChatService.DeleteConversation(conversationId),
 
-  getSettings: (): Promise<Settings> => SettingsService.Get(),
-  saveSettings: (settings: Settings, apiKey: string) => SettingsService.Save(settings, apiKey),
+  getSettings: async (): Promise<Settings> => {
+    const settings = await SettingsService.Get()
+    const providers = (settings.providers ?? [])
+      .filter((provider) => provider !== null)
+      .map((provider) => ({ ...provider })) as ProviderConfig[]
+    return {
+      providers,
+      activeProviderId: settings.activeProviderId,
+      mascotScale: settings.mascotScale,
+    }
+  },
+  saveProvider: (provider: ProviderConfig, apiKey: string): Promise<ProviderConfig> =>
+    SettingsService.SaveProvider(provider, apiKey),
+  deleteProvider: (id: string) => SettingsService.DeleteProvider(id),
+  setActiveProvider: (id: string) => SettingsService.SetActiveProvider(id),
 
   onChatDelta: (callback: (event: ChatDeltaEvent) => void) => subscribe(EVENTS.chatDelta, callback),
   onChatDone: (callback: (event: ChatDoneEvent) => void) => subscribe(EVENTS.chatDone, callback),

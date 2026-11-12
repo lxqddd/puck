@@ -3,16 +3,19 @@
 
 export interface ChatDeltaEvent {
     "messageId": string;
+    "conversationId": string;
     "text": string;
 }
 
 export interface ChatDoneEvent {
     "messageId": string;
+    "conversationId": string;
     "text": string;
 }
 
 export interface ChatErrorEvent {
     "messageId"?: string;
+    "conversationId"?: string;
     "message": string;
 }
 

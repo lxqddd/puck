@@ -11,5 +11,6 @@ export {
 };
 
 export type {
-    Position
+    Position,
+    SendResult
 } from "./models.js";

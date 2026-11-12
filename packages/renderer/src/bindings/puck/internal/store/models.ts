@@ -11,6 +11,7 @@ export interface ProviderConfig {
 }
 
 export interface Settings {
-    "provider": ProviderConfig | null;
+    "providers": (ProviderConfig | null)[] | null;
+    "activeProviderId": string;
     "mascotScale": number;
 }

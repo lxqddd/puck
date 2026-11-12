@@ -1,6 +1,10 @@
 package secure
 
-import "github.com/zalando/go-keyring"
+import (
+	"errors"
+
+	"github.com/zalando/go-keyring"
+)
 
 const service = "puck"
 
@@ -25,4 +29,12 @@ func (k *Keys) Get(providerID string) (string, error) {
 func (k *Keys) Has(providerID string) bool {
 	key, err := keyring.Get(service, providerID)
 	return err == nil && key != ""
+}
+
+func (k *Keys) Delete(providerID string) error {
+	err := keyring.Delete(service, providerID)
+	if err != nil && !errors.Is(err, keyring.ErrNotFound) {
+		return err
+	}
+	return nil
 }

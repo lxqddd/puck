@@ -5,11 +5,31 @@
 // @ts-ignore: Unused imports
 import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as history$0 from "../history/models.js";
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as $models from "./models.js";
+
+export function DeleteConversation(conversationID: string): $CancellablePromise<void> {
+    return $Call.ByID(1891685892, conversationID);
+}
+
+export function GetMessages(conversationID: string): $CancellablePromise<history$0.Message[] | null> {
+    return $Call.ByID(89233176, conversationID);
+}
+
+export function ListConversations(): $CancellablePromise<history$0.Conversation[] | null> {
+    return $Call.ByID(2068581124);
+}
+
 /**
- * Send 立即返回消息 ID，真正的流式输出通过事件推给所有窗口。
+ * Send 立即返回消息 ID 与会话 ID，流式内容通过事件推送给所有窗口。
  */
-export function Send(text: string): $CancellablePromise<string> {
-    return $Call.ByID(1139691502, text);
+export function Send(text: string, conversationID: string): $CancellablePromise<$models.SendResult> {
+    return $Call.ByID(1139691502, text, conversationID);
 }
 
 export function SetPersona(prompt: string): $CancellablePromise<void> {

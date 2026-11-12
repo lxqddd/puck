@@ -9,10 +9,18 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 // @ts-ignore: Unused imports
 import * as store$0 from "../store/models.js";
 
+export function DeleteProvider(id: string): $CancellablePromise<void> {
+    return $Call.ByID(9403289, id);
+}
+
 export function Get(): $CancellablePromise<store$0.Settings> {
     return $Call.ByID(3213148265);
 }
 
-export function Save(settings: store$0.Settings, apiKey: string): $CancellablePromise<void> {
-    return $Call.ByID(2255413754, settings, apiKey);
+export function SaveProvider(provider: store$0.ProviderConfig, apiKey: string): $CancellablePromise<store$0.ProviderConfig> {
+    return $Call.ByID(2648345239, provider, apiKey);
+}
+
+export function SetActiveProvider(id: string): $CancellablePromise<void> {
+    return $Call.ByID(2976708910, id);
 }

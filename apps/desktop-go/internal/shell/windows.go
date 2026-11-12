@@ -4,6 +4,7 @@ import (
 	"log"
 	"math"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -277,6 +278,76 @@ func (w *Windows) OpenChat() {
 	})
 	chat.Show()
 	chat.Focus()
+	if screen := w.screenUnderCursor(); screen != nil {
+		width, height := chat.Size()
+		area := screen.WorkArea
+		bounds := w.clampToWorkArea(application.Rect{
+			X:      area.X + (area.Width-width)/2,
+			Y:      area.Y + (area.Height-height)/2,
+			Width:  width,
+			Height: height,
+		})
+		chat.SetPosition(bounds.X, bounds.Y)
+	}
+	width, height := chat.Size()
+	log.Printf("puck: chat window opened %dx%d", width, height)
+	w.attachChatWebviewSync(chat)
+}
+
+func (w *Windows) screenUnderCursor() *application.Screen {
+	screen := w.app.Screen.GetPrimary()
+	if point, ok := cursor.Position(); ok {
+		if nearest := w.app.Screen.ScreenNearestDipPoint(application.Point{X: point.X, Y: point.Y}); nearest != nil {
+			return nearest
+		}
+	}
+	return screen
+}
+
+var (
+	chatSyncGeneration atomic.Uint64
+	chatSyncing        atomic.Bool
+	chatSyncCooldown   atomic.Int64
+)
+
+// attachChatWebviewSync 兜底处理 macOS 上窗口缩放后 webview 未跟随的偶发情况：
+// 在打开后和停止拖拽缩放后，用 1px 的尺寸抖动强制 webview 重新布局。
+func (w *Windows) attachChatWebviewSync(chat *application.WebviewWindow) {
+	chat.OnWindowEvent(events.Common.WindowDidResize, func(*application.WindowEvent) {
+		if chatSyncing.Load() || time.Now().UnixMilli() < chatSyncCooldown.Load() {
+			return
+		}
+		generation := chatSyncGeneration.Add(1)
+		go func() {
+			time.Sleep(200 * time.Millisecond)
+			if chatSyncGeneration.Load() != generation || chatSyncing.Load() {
+				return
+			}
+			w.syncChatWebview(chat)
+		}()
+	})
+	go func() {
+		time.Sleep(350 * time.Millisecond)
+		w.syncChatWebview(chat)
+	}()
+}
+
+func (w *Windows) syncChatWebview(chat *application.WebviewWindow) {
+	if !chatSyncing.CompareAndSwap(false, true) {
+		return
+	}
+	width, height := chat.Size()
+	if width <= 0 || height <= 0 {
+		chatSyncing.Store(false)
+		return
+	}
+	chat.SetSize(width+1, height)
+	time.Sleep(24 * time.Millisecond)
+	chat.SetSize(width, height)
+	time.Sleep(40 * time.Millisecond)
+	chatSyncCooldown.Store(time.Now().Add(500 * time.Millisecond).UnixMilli())
+	chatSyncing.Store(false)
+	log.Printf("puck: chat webview synced to %dx%d", width, height)
 }
 
 func (w *Windows) OpenSettings() {

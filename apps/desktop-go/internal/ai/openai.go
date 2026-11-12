@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 )
 
 // OpenAICompatible 覆盖 OpenAI、DeepSeek、通义、Kimi、智谱、Ollama 等兼容端点。
@@ -25,7 +24,7 @@ func (p *OpenAICompatible) Chat(ctx context.Context, req ChatRequest, onEvent fu
 	}
 	client := p.HTTP
 	if client == nil {
-		client = &http.Client{Timeout: 120 * time.Second}
+		client = &http.Client{}
 	}
 
 	messages := make([]Message, 0, len(req.Messages)+1)

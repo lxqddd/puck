@@ -5,3 +5,8 @@ export interface Position {
     "x": number;
     "y": number;
 }
+
+export interface SendResult {
+    "messageId": string;
+    "conversationId": string;
+}

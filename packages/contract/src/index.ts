@@ -11,16 +11,19 @@ export type ChatState = 'idle' | 'thinking' | 'speaking'
 
 export interface ChatDeltaEvent {
   messageId: string
+  conversationId: string
   text: string
 }
 
 export interface ChatDoneEvent {
   messageId: string
+  conversationId: string
   text: string
 }
 
 export interface ChatErrorEvent {
   messageId?: string
+  conversationId?: string
   message: string
 }
 
@@ -32,25 +35,39 @@ export interface MascotScaleEvent {
   scale: number
 }
 
+export type ProviderType = 'openai-compatible' | 'anthropic' | 'gemini'
+
 export interface ProviderConfig {
   id: string
   name: string
-  type: 'openai-compatible'
+  type: ProviderType | string
   baseURL: string
   model: string
   hasKey: boolean
 }
 
 export interface Settings {
-  provider: ProviderConfig | null
+  providers: ProviderConfig[]
+  activeProviderId: string
   mascotScale: number
 }
 
-export interface SendMessageRequest {
-  conversationId?: string
-  text: string
+export interface Conversation {
+  id: string
+  title: string
+  createdAt: number
+  updatedAt: number
 }
 
-export interface SendMessageResponse {
+export interface StoredMessage {
+  id: number
+  conversationId: string
+  role: 'user' | 'assistant'
+  content: string
+  createdAt: number
+}
+
+export interface SendResult {
   messageId: string
+  conversationId: string
 }

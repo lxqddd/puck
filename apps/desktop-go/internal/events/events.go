@@ -11,18 +11,21 @@ const (
 )
 
 type ChatDeltaEvent struct {
-	MessageID string `json:"messageId"`
-	Text      string `json:"text"`
+	MessageID      string `json:"messageId"`
+	ConversationID string `json:"conversationId"`
+	Text           string `json:"text"`
 }
 
 type ChatDoneEvent struct {
-	MessageID string `json:"messageId"`
-	Text      string `json:"text"`
+	MessageID      string `json:"messageId"`
+	ConversationID string `json:"conversationId"`
+	Text           string `json:"text"`
 }
 
 type ChatErrorEvent struct {
-	MessageID string `json:"messageId,omitempty"`
-	Message   string `json:"message"`
+	MessageID      string `json:"messageId,omitempty"`
+	ConversationID string `json:"conversationId,omitempty"`
+	Message        string `json:"message"`
 }
 
 type ChatStateEvent struct {

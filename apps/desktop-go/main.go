@@ -9,6 +9,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 
 	"puck/internal/events"
+	"puck/internal/history"
 	"puck/internal/secure"
 	"puck/internal/services"
 	"puck/internal/shell"
@@ -24,8 +25,16 @@ func main() {
 	settingsStore := store.NewSettingsStore()
 	keys := secure.New()
 
+	historyStore, err := history.NewStore(history.DefaultPath())
+	if err != nil {
+		log.Printf("puck: history store unavailable: %v", err)
+	}
+	if historyStore != nil {
+		defer historyStore.Close()
+	}
+
 	mascotService := services.NewMascot()
-	chatService := services.NewChat(settingsStore, keys)
+	chatService := services.NewChat(settingsStore, keys, historyStore)
 	settingsService := services.NewSettings(settingsStore, keys)
 
 	app := application.New(application.Options{
