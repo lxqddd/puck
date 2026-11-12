@@ -19,6 +19,12 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+//go:embed build/appicon.png
+var appIcon []byte
+
+//go:embed build/trayicon.png
+var trayIcon []byte
+
 func main() {
 	events.Register()
 
@@ -53,7 +59,10 @@ func main() {
 		},
 	})
 
+	app.SetIcon(appIcon)
+
 	windows := shell.NewWindows(app)
+	windows.SetTrayIcon(trayIcon)
 
 	settings, _ := settingsStore.Load()
 	initialScale := settings.MascotScale

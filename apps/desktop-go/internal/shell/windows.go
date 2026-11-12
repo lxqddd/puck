@@ -3,6 +3,7 @@ package shell
 import (
 	"log"
 	"math"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -29,6 +30,7 @@ type Windows struct {
 	app          *application.App
 	mascot       *application.WebviewWindow
 	controller   *MascotController
+	trayIcon     []byte
 	mu           sync.Mutex // 聊天/设置窗口的创建
 	scaleMu      sync.Mutex // 缩放状态与持久化回调
 	scale        float64
@@ -37,6 +39,10 @@ type Windows struct {
 
 func NewWindows(app *application.App) *Windows {
 	return &Windows{app: app, scale: MascotDefaultScale}
+}
+
+func (w *Windows) SetTrayIcon(icon []byte) {
+	w.trayIcon = append([]byte(nil), icon...)
 }
 
 func (w *Windows) CreateMascot() *MascotController {
@@ -381,7 +387,15 @@ func (w *Windows) OpenSettings() {
 
 func (w *Windows) CreateTray() {
 	tray := w.app.SystemTray.New()
-	tray.SetLabel("Puck")
+	if len(w.trayIcon) > 0 {
+		if runtime.GOOS == "darwin" {
+			tray.SetTemplateIcon(w.trayIcon)
+		} else {
+			tray.SetIcon(w.trayIcon)
+		}
+	} else {
+		tray.SetLabel("Puck")
+	}
 	tray.SetTooltip("Puck · 桌角的小伙伴")
 
 	menu := application.NewMenu()

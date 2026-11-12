@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="icon-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fffdf7"/>
+      <stop offset="100%" stop-color="#d9fff3"/>
+    </linearGradient>
+    <radialGradient id="icon-glow" cx="50%" cy="28%" r="62%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="0" y="0" width="1024" height="1024" rx="224" fill="url(#icon-bg)"/>
+  <rect x="0" y="0" width="1024" height="1024" rx="224" fill="url(#icon-glow)"/>
+<svg x="224" y="152" width="576" height="720" viewBox="0 0 240 300">
+        <defs>
+          <linearGradient id="puck-body" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#86eccb" />
+            <stop offset="100%" stop-color="#35bd98" />
+          </linearGradient>
+          <radialGradient id="puck-glow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ffe9a8" stop-opacity="0.95" />
+            <stop offset="100%" stop-color="#ffe9a8" stop-opacity="0" />
+          </radialGradient>
+        </defs>
+
+        <ellipse class="shadow" cx="120" cy="276" rx="58" ry="11" fill="rgba(29, 107, 87, 0.16)" />
+
+        <g class="body-group">
+          <line
+            class="antenna"
+            x1="120"
+            y1="66"
+            x2="120"
+            y2="30"
+            stroke="#2b8f75"
+            stroke-width="6"
+            stroke-linecap="round"
+          />
+          <circle class="antenna-tip" cx="120" cy="26" r="9" fill="#ffd166" />
+          <circle class="glow" cx="120" cy="26" r="24" fill="url(#puck-glow)" />
+
+          <path
+            class="body"
+            d="M120 54c43 0 74 29 74 74v56c0 42-33 73-74 73s-74-31-74-73v-56c0-45 31-74 74-74z"
+            fill="url(#puck-body)"
+          />
+          <ellipse class="belly" cx="120" cy="200" rx="45" ry="36" fill="#e8fff7" opacity="0.6" />
+
+          <g class="face">
+            <g class="eye eye-left">
+              <ellipse cx="93" cy="143" rx="10" ry="14" fill="#143f35" />
+              <circle cx="96" cy="138" r="3.5" fill="#ffffff" />
+            </g>
+            <g class="eye eye-right">
+              <ellipse cx="147" cy="143" rx="10" ry="14" fill="#143f35" />
+              <circle cx="150" cy="138" r="3.5" fill="#ffffff" />
+            </g>
+            <g class="brows">
+              <path d="M80 121c8-7 19-7 27 0" stroke="#1d6b57" stroke-width="5" fill="none" stroke-linecap="round" />
+              <path d="M133 121c8-7 19-7 27 0" stroke="#1d6b57" stroke-width="5" fill="none" stroke-linecap="round" />
+            </g>
+            <ellipse class="blush blush-left" cx="74" cy="168" rx="11" ry="6" fill="#ff9db0" opacity="0.55" />
+            <ellipse class="blush blush-right" cx="166" cy="168" rx="11" ry="6" fill="#ff9db0" opacity="0.55" />
+            <path
+              class="mouth"
+              d="M108 171c8 7 16 7 24 0"
+              stroke="#143f35"
+              stroke-width="5"
+              fill="none"
+              stroke-linecap="round"
+            />
+          </g>
+
+          <g class="arm arm-left">
+            <path d="M50 176c-12 12-13 27-6 40" stroke="#35bd98" stroke-width="15" fill="none" stroke-linecap="round" />
+          </g>
+          <g class="arm arm-right">
+            <path d="M190 176c12 12 13 27 6 40" stroke="#35bd98" stroke-width="15" fill="none" stroke-linecap="round" />
+          </g>
+
+          <g class="feet">
+            <ellipse cx="94" cy="270" rx="18" ry="9" fill="#2b8f75" />
+            <ellipse cx="146" cy="270" rx="18" ry="9" fill="#2b8f75" />
+          </g>
+
+          <g class="thought-dots">
+            <circle cx="196" cy="92" r="4" fill="#9adfc8" />
+            <circle cx="206" cy="78" r="5.5" fill="#9adfc8" />
+            <circle cx="218" cy="60" r="7" fill="#9adfc8" />
+          </g>
+        </g>
+      </svg>
+</svg>
