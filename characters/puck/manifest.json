@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "id": "puck",
+  "version": "0.1.0",
+  "displayName": "Puck",
+  "window": { "width": 360, "height": 420 },
+  "actions": ["idle", "blink", "wave", "nod", "hop", "think", "work", "speak", "happy", "sad"],
+  "emotions": ["neutral", "happy", "curious", "sad"],
+  "hitAreas": [{ "id": "body", "x": 40, "y": 48, "width": 280, "height": 340 }]
+}

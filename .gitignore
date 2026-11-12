@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.turbo/
+.DS_Store
+*.log
+
+# Wails build artifacts
+apps/desktop-go/build/bin/
+apps/desktop-go/bin/
+apps/desktop-go/frontend/dist/
+
+# Local `go build .` output
+apps/desktop-go/puck
+# go-task cache
+apps/desktop-go/.task/

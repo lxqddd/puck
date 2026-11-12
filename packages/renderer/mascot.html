@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Puck</title>
+  </head>
+  <body class="mascot-body">
+    <div id="boot" aria-hidden="true">P</div>
+    <div id="app"></div>
+    <script>
+      (function () {
+        var boot = document.getElementById('boot')
+        function fail(reason) {
+          if (!boot) return
+          boot.style.background = '#d9534f'
+          boot.textContent = '!'
+          boot.title = String(reason || 'frontend error')
+        }
+        window.addEventListener('error', function (event) {
+          fail(event.message)
+        })
+        window.addEventListener('unhandledrejection', function (event) {
+          fail(event.reason)
+        })
+      })()
+    </script>
+    <script type="module" src="/src/mascot/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "gestures": {
+    "wave": "wave",
+    "nod": "nod",
+    "hop": "hop",
+    "thinking": "think",
+    "working": "work",
+    "speaking": "speak"
+  },
+  "emotions": {
+    "neutral": "neutral",
+    "happy": "happy",
+    "sad": "sad",
+    "surprised": "curious"
+  },
+  "idlePool": ["wave", "nod", "blink"]
+}

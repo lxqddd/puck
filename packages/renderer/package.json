@@ -1,0 +1,25 @@
+{
+  "name": "@puck/renderer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "build:dev": "vite build --minify false --mode development",
+    "typecheck": "vue-tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@puck/avatar-runtime": "workspace:*",
+    "@puck/contract": "workspace:*",
+    "@wailsio/runtime": "3.1.0",
+    "vue": "^3.5.45"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.10",
+    "vite": "^8.3.8",
+    "vitest": "^5.0.3",
+    "vue-tsc": "^3.3.14"
+  }
+}

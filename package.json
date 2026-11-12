@@ -1,0 +1,27 @@
+{
+  "name": "puck",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Puck 桌宠 —— 常驻桌角的 AI 小伙伴",
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "node apps/desktop-go/dev.mjs",
+    "build": "node apps/desktop-go/build.mjs",
+    "build:web": "turbo run build --filter=@puck/renderer",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "doctor": "node scripts/doctor.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "prettier": "^3.9.0",
+    "turbo": "^2.11.11",
+    "typescript": "6.0.3"
+  }
+}

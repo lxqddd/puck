@@ -1,0 +1,67 @@
+:root {
+  --puck-mint: #3fc9a5;
+  --puck-mint-deep: #1d6b57;
+  --puck-mint-soft: #d9fff3;
+  --puck-cream: #fbf7ef;
+  --puck-card: #ffffff;
+  --puck-ink: #17342d;
+  --puck-muted: #6b7f79;
+  --puck-line: rgba(23, 52, 45, 0.12);
+  font-family:
+    'SF Pro Rounded',
+    'PingFang SC',
+    'Hiragino Sans GB',
+    'Microsoft YaHei',
+    system-ui,
+    sans-serif;
+  color: var(--puck-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+#app {
+  height: 100%;
+}
+
+body.mascot-body {
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+}
+
+#boot {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #3fc9a5;
+  color: #ffffff;
+  font-size: 26px;
+  font-weight: 700;
+  box-shadow: 0 10px 26px rgba(23, 52, 45, 0.28);
+}
+
+body.chat-body,
+body.settings-body {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(63, 201, 165, 0.16), transparent 42%),
+    var(--puck-cream);
+}
+
+button {
+  font: inherit;
+}
