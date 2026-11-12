@@ -28,8 +28,8 @@ export function ListConversations(): $CancellablePromise<history$0.Conversation[
 /**
  * Send 立即返回消息 ID 与会话 ID，流式内容通过事件推送给所有窗口。
  */
-export function Send(text: string, conversationID: string): $CancellablePromise<$models.SendResult> {
-    return $Call.ByID(1139691502, text, conversationID);
+export function Send(text: string, conversationID: string, providerID: string): $CancellablePromise<$models.SendResult> {
+    return $Call.ByID(1139691502, text, conversationID, providerID);
 }
 
 export function SetPersona(prompt: string): $CancellablePromise<void> {

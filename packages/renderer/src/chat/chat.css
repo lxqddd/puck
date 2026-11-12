@@ -250,6 +250,24 @@ body.chat-body {
   background: #ffffff;
 }
 
+.composer .model-picker {
+  max-width: 200px;
+  height: 28px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(63, 201, 165, 0.12);
+  color: var(--puck-mint-deep);
+  font-size: 12px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+}
+
+.composer .model-picker:hover {
+  background: rgba(63, 201, 165, 0.2);
+}
+
 .composer .ant-sender textarea {
   font-size: 14px;
   line-height: 20px;

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, h, onBeforeUnmount, onMounted, ref } from 'vue'
-import type { Conversation, StoredMessage } from '@puck/contract'
+import type { Conversation, ProviderConfig, StoredMessage } from '@puck/contract'
 import {
   Actions,
   Bubble,
@@ -33,6 +33,9 @@ const input = ref('')
 const pending = ref(false)
 const errorText = ref('')
 const toast = ref('')
+const providers = ref<ProviderConfig[]>([])
+const activeProviderId = ref('')
+const selectedProviderId = ref('')
 const unsubscribers: Array<() => void> = []
 
 const suggestions = ['帮我想个周末计划', '给我讲个冷笑话', '解释一下什么是 RAG']
@@ -195,6 +198,63 @@ async function refreshConversations() {
   }
 }
 
+function providerLabel(provider: ProviderConfig): string {
+  const model = provider.model?.trim()
+  const name = provider.name?.trim() || provider.type || '模型'
+  return model ? `${name} · ${model}` : name
+}
+
+async function loadProviders() {
+  try {
+    const settings = await bridge.getSettings()
+    providers.value = (settings.providers ?? []).filter(
+      (provider) => provider.type !== 'assistant',
+    )
+    activeProviderId.value = settings.activeProviderId
+    if (
+      !selectedProviderId.value ||
+      !providers.value.some((provider) => provider.id === selectedProviderId.value)
+    ) {
+      const active = providers.value.find(
+        (provider) => provider.id === settings.activeProviderId,
+      )
+      selectedProviderId.value = active?.id ?? providers.value[0]?.id ?? ''
+    }
+  } catch {
+    // 聊天仍可由后端使用当前供应商，不因模型列表加载失败而中断。
+  }
+}
+
+function applyConversationProvider(conversationID: string) {
+  const conversation = conversations.value.find((item) => item.id === conversationID)
+  if (
+    conversation?.providerId &&
+    providers.value.some((provider) => provider.id === conversation.providerId)
+  ) {
+    selectedProviderId.value = conversation.providerId
+    return
+  }
+  selectedProviderId.value = activeProviderId.value || providers.value[0]?.id || ''
+}
+
+const modelPicker = computed(() => {
+  if (providers.value.length === 0) return false
+  return h(
+    'select',
+    {
+      class: 'model-picker',
+      value: selectedProviderId.value,
+      title: '切换当前对话使用的模型',
+      onChange: (event: Event) => {
+        selectedProviderId.value = (event.target as HTMLSelectElement).value
+      },
+    },
+    providers.value.map((provider) =>
+      h('option', { value: provider.id }, providerLabel(provider)),
+    ),
+  )
+})
+
 async function openConversation(id: string) {
   const epoch = ++viewEpoch
   activeConversationId.value = id
@@ -203,6 +263,7 @@ async function openConversation(id: string) {
     const stored = await bridge.getMessages(id)
     if (epoch !== viewEpoch) return
     messages.value = stored.map(fromStored)
+    applyConversationProvider(id)
   } catch (error) {
     if (epoch === viewEpoch) {
       setError(error)
@@ -216,6 +277,7 @@ function newConversation() {
   messages.value = []
   errorText.value = ''
   input.value = ''
+  selectedProviderId.value = activeProviderId.value || providers.value[0]?.id || ''
 }
 
 async function removeConversation(id: string) {
@@ -248,7 +310,7 @@ async function send(textInput?: string) {
   messages.value.push({ id: `local-${Date.now()}`, role: 'user', text })
 
   try {
-    const result = await bridge.sendChat(text, expectedActive)
+    const result = await bridge.sendChat(text, expectedActive, selectedProviderId.value)
     pendingMessageId = result.messageId
     if (epoch !== viewEpoch) {
       await refreshConversations()
@@ -303,13 +365,20 @@ onMounted(async () => {
     }),
   )
 
-  await refreshConversations()
+  await Promise.all([loadProviders(), refreshConversations()])
   const mostRecent = conversations.value[0]
   if (mostRecent) await openConversation(mostRecent.id)
+
+  window.addEventListener('focus', onWindowFocus)
 })
+
+function onWindowFocus() {
+  void loadProviders()
+}
 
 onBeforeUnmount(() => {
   window.clearTimeout(toastTimer)
+  window.removeEventListener('focus', onWindowFocus)
   for (const unsubscribe of unsubscribers) unsubscribe()
 })
 </script>
@@ -374,6 +443,7 @@ onBeforeUnmount(() => {
               :loading="pending"
               placeholder="跟 Puck 说点什么…"
               :auto-size="{ minRows: 1, maxRows: 6 }"
+              :prefix="modelPicker"
               :on-change="onSenderChange"
               :on-submit="send"
             />

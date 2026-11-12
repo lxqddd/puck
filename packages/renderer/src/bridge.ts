@@ -35,8 +35,8 @@ export const bridge = {
   scaleBy: (delta: number): Promise<number> => MascotService.ScaleBy(delta),
 
   setPersona: (prompt: string) => ChatService.SetPersona(prompt),
-  sendChat: (text: string, conversationId: string): Promise<SendResult> =>
-    ChatService.Send(text, conversationId),
+  sendChat: (text: string, conversationId: string, providerId: string): Promise<SendResult> =>
+    ChatService.Send(text, conversationId, providerId),
   listConversations: async (): Promise<Conversation[]> => (await ChatService.ListConversations()) ?? [],
   getMessages: async (conversationId: string): Promise<StoredMessage[]> =>
     ((await ChatService.GetMessages(conversationId)) ?? []) as StoredMessage[],

@@ -43,6 +43,25 @@ func TestWebSearchToolsRespectToggle(t *testing.T) {
 	}
 }
 
+func TestResolveProviderID(t *testing.T) {
+	settings := store.Settings{
+		Providers: []*store.ProviderConfig{
+			{ID: "p-a", Type: store.ProviderTypeOpenAI},
+			{ID: "p-b", Type: store.ProviderTypeAnthropic},
+		},
+		ActiveProviderID: "p-a",
+	}
+	if got := resolveProviderID(settings, "p-b"); got != "p-b" {
+		t.Fatalf("requested provider = %q", got)
+	}
+	if got := resolveProviderID(settings, "missing"); got != "p-a" {
+		t.Fatalf("fallback provider = %q", got)
+	}
+	if got := resolveProviderID(settings, ""); got != "p-a" {
+		t.Fatalf("active provider = %q", got)
+	}
+}
+
 func TestWebSearchToolsUseDeepSeekBackend(t *testing.T) {
 	service := &ChatService{search: search.NewClient()}
 	tools, _ := service.webSearchTools(&store.ProviderConfig{

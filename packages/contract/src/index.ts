@@ -63,6 +63,7 @@ export interface ProviderTestResult {
 export interface Conversation {
   id: string
   title: string
+  providerId: string
   createdAt: number
   updatedAt: number
 }

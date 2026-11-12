@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,10 +15,11 @@ import (
 )
 
 type Conversation struct {
-	ID        string `json:"id"`
-	Title     string `json:"title"`
-	CreatedAt int64  `json:"createdAt"`
-	UpdatedAt int64  `json:"updatedAt"`
+	ID         string `json:"id"`
+	Title      string `json:"title"`
+	ProviderID string `json:"providerId"`
+	CreatedAt  int64  `json:"createdAt"`
+	UpdatedAt  int64  `json:"updatedAt"`
 }
 
 type Message struct {
@@ -75,10 +77,44 @@ CREATE TABLE IF NOT EXISTS conversations (
 	if err := s.ensureMessagesSchema(); err != nil {
 		return err
 	}
+	if err := s.ensureConversationProviderColumn(); err != nil {
+		return err
+	}
 	_, err := s.db.Exec(`
 CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(updated_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id, id);
 `)
+	return err
+}
+
+func (s *Store) ensureConversationProviderColumn() error {
+	rows, err := s.db.Query(`PRAGMA table_info(conversations)`)
+	if err != nil {
+		return err
+	}
+	exists := false
+	for rows.Next() {
+		var (
+			columnID   int
+			name       string
+			columnType string
+			notNull    int
+			defaultVal any
+			primaryKey int
+		)
+		if err := rows.Scan(&columnID, &name, &columnType, &notNull, &defaultVal, &primaryKey); err != nil {
+			rows.Close()
+			return err
+		}
+		if name == "provider_id" {
+			exists = true
+		}
+	}
+	rows.Close()
+	if exists {
+		return nil
+	}
+	_, err = s.db.Exec(`ALTER TABLE conversations ADD COLUMN provider_id TEXT NOT NULL DEFAULT ''`)
 	return err
 }
 
@@ -147,7 +183,7 @@ func (s *Store) ListConversations(limit int) ([]Conversation, error) {
 		limit = 50
 	}
 	rows, err := s.db.Query(
-		`SELECT id, title, created_at, updated_at FROM conversations ORDER BY updated_at DESC LIMIT ?`,
+		`SELECT id, title, provider_id, created_at, updated_at FROM conversations ORDER BY updated_at DESC LIMIT ?`,
 		limit,
 	)
 	if err != nil {
@@ -158,7 +194,7 @@ func (s *Store) ListConversations(limit int) ([]Conversation, error) {
 	conversations := make([]Conversation, 0, limit)
 	for rows.Next() {
 		var conversation Conversation
-		if err := rows.Scan(&conversation.ID, &conversation.Title, &conversation.CreatedAt, &conversation.UpdatedAt); err != nil {
+		if err := rows.Scan(&conversation.ID, &conversation.Title, &conversation.ProviderID, &conversation.CreatedAt, &conversation.UpdatedAt); err != nil {
 			return nil, err
 		}
 		conversations = append(conversations, conversation)
@@ -167,21 +203,45 @@ func (s *Store) ListConversations(limit int) ([]Conversation, error) {
 }
 
 func (s *Store) CreateConversation(title string) (Conversation, error) {
+	return s.CreateConversationForProvider(title, "")
+}
+
+func (s *Store) CreateConversationForProvider(title, providerID string) (Conversation, error) {
 	now := time.Now().UnixMilli()
 	conversation := Conversation{
-		ID:        newID(),
-		Title:     TitleFromText(title),
-		CreatedAt: now,
-		UpdatedAt: now,
+		ID:         newID(),
+		Title:      TitleFromText(title),
+		ProviderID: strings.TrimSpace(providerID),
+		CreatedAt:  now,
+		UpdatedAt:  now,
 	}
 	_, err := s.db.Exec(
-		`INSERT INTO conversations(id, title, created_at, updated_at) VALUES(?,?,?,?)`,
-		conversation.ID, conversation.Title, conversation.CreatedAt, conversation.UpdatedAt,
+		`INSERT INTO conversations(id, title, provider_id, created_at, updated_at) VALUES(?,?,?,?,?)`,
+		conversation.ID, conversation.Title, conversation.ProviderID, conversation.CreatedAt, conversation.UpdatedAt,
 	)
 	if err != nil {
 		return Conversation{}, err
 	}
 	return conversation, nil
+}
+
+func (s *Store) SetConversationProvider(conversationID, providerID string) error {
+	_, err := s.db.Exec(
+		`UPDATE conversations SET provider_id = ?, updated_at = ? WHERE id = ?`,
+		strings.TrimSpace(providerID), time.Now().UnixMilli(), conversationID,
+	)
+	return err
+}
+
+func (s *Store) ConversationProvider(conversationID string) (string, error) {
+	var providerID string
+	err := s.db.QueryRow(
+		`SELECT provider_id FROM conversations WHERE id = ?`, conversationID,
+	).Scan(&providerID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return providerID, err
 }
 
 // GetMessages 返回最近 limit 条消息，按时间正序排列。

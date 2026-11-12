@@ -71,7 +71,7 @@ func (s *ChatService) DeleteConversation(conversationID string) error {
 }
 
 // Send 立即返回消息 ID 与会话 ID，流式内容通过事件推送给所有窗口。
-func (s *ChatService) Send(text string, conversationID string) (SendResult, error) {
+func (s *ChatService) Send(text string, conversationID string, providerID string) (SendResult, error) {
 	text = strings.TrimSpace(text)
 	if text == "" {
 		return SendResult{}, fmt.Errorf("message is empty")
@@ -89,25 +89,42 @@ func (s *ChatService) Send(text string, conversationID string) (SendResult, erro
 		}
 	}()
 
+	settings, _ := s.store.Load()
+	requestedProviderID := strings.TrimSpace(providerID)
+
 	conversationID = strings.TrimSpace(conversationID)
 	if conversationID == "" {
-		conversation, err := s.history.CreateConversation(text)
+		providerID = resolveProviderID(settings, requestedProviderID)
+		conversation, err := s.history.CreateConversationForProvider(text, providerID)
 		if err != nil {
 			return SendResult{}, err
 		}
 		conversationID = conversation.ID
+	} else if requestedProviderID != "" && providerExists(settings, requestedProviderID) {
+		providerID = requestedProviderID
+		if err := s.history.SetConversationProvider(conversationID, providerID); err != nil {
+			return SendResult{}, err
+		}
+	} else {
+		providerID, _ = s.history.ConversationProvider(conversationID)
+		if !providerExists(settings, providerID) {
+			providerID = resolveProviderID(settings, "")
+			if err := s.history.SetConversationProvider(conversationID, providerID); err != nil {
+				return SendResult{}, err
+			}
+		}
 	}
 	if _, err := s.history.AppendMessage(conversationID, string(ai.RoleUser), text); err != nil {
 		return SendResult{}, err
 	}
 
 	messageID := fmt.Sprintf("m-%d", s.counter.Add(1))
-	go s.run(messageID, conversationID, text)
+	go s.run(messageID, conversationID, text, providerID)
 	release = false
 	return SendResult{MessageID: messageID, ConversationID: conversationID}, nil
 }
 
-func (s *ChatService) run(messageID, conversationID, text string) {
+func (s *ChatService) run(messageID, conversationID, text, providerID string) {
 	defer s.busy.Store(false)
 
 	app := application.Get()
@@ -117,7 +134,7 @@ func (s *ChatService) run(messageID, conversationID, text string) {
 	emitState("thinking")
 
 	settings, _ := s.store.Load()
-	provider, model, providerConfig, providerErr := providerFor(settings, s.keys)
+	provider, model, providerConfig, providerErr := providerFor(settings, s.keys, providerID)
 	if providerErr != nil {
 		app.Event.Emit(events.ChatError, events.ChatErrorEvent{
 			MessageID:      messageID,
@@ -215,12 +232,22 @@ func (s *ChatService) run(messageID, conversationID, text string) {
 	emitState("idle")
 }
 
-func providerFor(settings store.Settings, keys *secure.Keys) (ai.Provider, string, *store.ProviderConfig, error) {
+func providerFor(settings store.Settings, keys *secure.Keys, providerID string) (ai.Provider, string, *store.ProviderConfig, error) {
 	var config *store.ProviderConfig
-	for _, provider := range settings.Providers {
-		if provider.ID == settings.ActiveProviderID {
-			config = provider
-			break
+	if providerID != "" {
+		for _, provider := range settings.Providers {
+			if provider.ID == providerID {
+				config = provider
+				break
+			}
+		}
+	}
+	if config == nil {
+		for _, provider := range settings.Providers {
+			if provider.ID == settings.ActiveProviderID {
+				config = provider
+				break
+			}
 		}
 	}
 	if config == nil && len(settings.Providers) > 0 {
@@ -236,6 +263,33 @@ func providerFor(settings store.Settings, keys *secure.Keys) (ai.Provider, strin
 		return nil, "", config, fmt.Errorf("「%s」%w", config.Name, err)
 	}
 	return provider, model, config, nil
+}
+
+func resolveProviderID(settings store.Settings, requested string) string {
+	requested = strings.TrimSpace(requested)
+	if providerExists(settings, requested) {
+		return requested
+	}
+	if providerExists(settings, settings.ActiveProviderID) {
+		return settings.ActiveProviderID
+	}
+	if len(settings.Providers) > 0 {
+		return settings.Providers[0].ID
+	}
+	return ""
+}
+
+func providerExists(settings store.Settings, providerID string) bool {
+	providerID = strings.TrimSpace(providerID)
+	if providerID == "" {
+		return false
+	}
+	for _, provider := range settings.Providers {
+		if provider.ID == providerID {
+			return true
+		}
+	}
+	return false
 }
 
 var webSearchTool = ai.ToolDefinition{
