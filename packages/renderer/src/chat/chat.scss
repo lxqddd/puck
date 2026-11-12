@@ -15,6 +15,13 @@ html.dark .chat-header {
   background: var(--puck-panel-soft);
 }
 
+.chat-header {
+  h1,
+  p {
+    margin: 0;
+  }
+}
+
 html.dark .chat-sidebar {
   background: var(--puck-panel);
 }

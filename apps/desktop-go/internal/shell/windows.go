@@ -424,7 +424,6 @@ func (w *Windows) CreateTray() {
 
 	menu := application.NewMenu()
 	menu.Add("打开对话").OnClick(func(*application.Context) { w.OpenChat() })
-	menu.Add("设置…").OnClick(func(*application.Context) { w.OpenSettings() })
 	menu.AddSeparator()
 	menu.Add("放大").OnClick(func(*application.Context) { w.ScaleMascotBy(mascotScaleStep) })
 	menu.Add("缩小").OnClick(func(*application.Context) { w.ScaleMascotBy(-mascotScaleStep) })

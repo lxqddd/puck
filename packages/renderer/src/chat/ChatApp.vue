@@ -43,7 +43,7 @@ const unsubscribers: Array<() => void> = []
 
 const suggestions = ['帮我想个周末计划', '给我讲个冷笑话', '解释一下什么是 RAG']
 
-const { isDark, setTheme } = useTheme()
+const { isDark } = useTheme()
 
 let pendingMessageId = ''
 let viewEpoch = 0
@@ -82,8 +82,8 @@ const themeConfig = computed(() => ({
   },
 }))
 
-function toggleTheme() {
-  void setTheme(isDark.value ? 'light' : 'dark')
+function openSettings() {
+  void bridge.openSettings()
 }
 
 const puckAvatar = h(PuckAvatar, { class: 'h-[30px] w-[30px] rounded-full' })
@@ -399,60 +399,16 @@ onBeforeUnmount(() => {
   <XProvider :theme="themeConfig">
     <div class="flex h-full w-full flex-col">
       <header
-        class="chat-header flex items-center justify-between gap-4 border-b border-puck-line px-6 pb-4 pl-[88px] pt-[18px] [-webkit-app-region:drag]"
+        class="chat-header flex items-center justify-between gap-4 border-b border-puck-line px-6 pb-2 pl-[88px] pt-2 [-webkit-app-region:drag]"
       >
         <div class="flex items-center gap-3">
           <PuckAvatar
-            class="h-[38px] w-[38px] rounded-full shadow-[0_4px_10px_rgba(53,189,152,0.35)]"
+            class="h-8 w-8 rounded-full shadow-[0_4px_10px_rgba(53,189,152,0.35)]"
           />
-          <div>
-            <h1 class="m-0 text-base font-bold tracking-[0.2px]">Puck</h1>
-            <p class="mb-0 mt-0.5 text-xs text-puck-muted">住在你桌角的小伙伴</p>
+          <div class="flex flex-col">
+            <h1 class="m-0 text-[15px] font-bold leading-5 tracking-[0.2px]">Puck</h1>
+            <p class="mb-0 mt-0 text-[11px] leading-4 text-puck-muted">住在你桌角的小伙伴</p>
           </div>
-        </div>
-        <div class="flex items-center gap-2 [-webkit-app-region:no-drag]">
-          <button
-            type="button"
-            class="grid h-8 w-8 place-items-center rounded-full border border-puck-line bg-white/60 text-puck-ink transition-colors hover:bg-white dark:bg-puck-surface dark:hover:bg-puck-surface-soft"
-            title="切换亮暗主题"
-            @click="toggleTheme"
-          >
-            <svg
-              v-if="isDark"
-              class="h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            >
-              <circle cx="12" cy="12" r="4" />
-              <path
-                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
-              />
-            </svg>
-            <svg
-              v-else
-              class="h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
-            </svg>
-          </button>
-          <span
-            class="rounded-full px-2.5 py-[5px] text-xs font-semibold"
-            :class="
-              pending
-                ? 'bg-puck-warning-soft text-puck-warning'
-                : 'bg-puck-mint/12 text-puck-mint-deep'
-            "
-            >{{ pending ? '在想…' : '在线' }}</span
-          >
         </div>
       </header>
 
@@ -469,6 +425,31 @@ onBeforeUnmount(() => {
             :creation="creation"
             :groupable="true"
           />
+          <div class="mt-2 border-t border-puck-line pt-2">
+            <button
+              type="button"
+              class="flex w-full items-center gap-2.5 rounded-[10px] border-none bg-transparent px-2.5 py-2 text-left text-[13px] font-medium text-puck-muted transition-colors hover:bg-puck-mint/10 hover:text-puck-ink"
+              title="设置"
+              aria-label="设置"
+              @click="openSettings"
+            >
+              <svg
+                class="h-4 w-4 flex-none"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+                />
+              </svg>
+              <span>设置</span>
+            </button>
+          </div>
         </aside>
 
         <section class="flex min-w-0 flex-1 flex-col">
