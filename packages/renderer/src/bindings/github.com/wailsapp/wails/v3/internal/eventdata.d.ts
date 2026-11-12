@@ -18,6 +18,7 @@ declare module "@wailsio/runtime" {
             "chat:error": events$0.ChatErrorEvent;
             "chat:state": events$0.ChatStateEvent;
             "mascot:scale": events$0.MascotScaleEvent;
+            "navigate:route": events$0.NavigateRouteEvent;
             "theme:changed": events$0.ThemeChangedEvent;
         }
     }

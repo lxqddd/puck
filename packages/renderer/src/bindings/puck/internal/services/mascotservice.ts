@@ -37,10 +37,6 @@ export function OpenChat(): $CancellablePromise<void> {
     return $Call.ByID(1335679871);
 }
 
-export function OpenSettings(): $CancellablePromise<void> {
-    return $Call.ByID(2403521932);
-}
-
 export function ScaleBy(delta: number): $CancellablePromise<number> {
     return $Call.ByID(3638822168, delta);
 }

@@ -118,9 +118,3 @@ func (s *MascotService) OpenChat() {
 		s.windows.OpenChat()
 	}
 }
-
-func (s *MascotService) OpenSettings() {
-	if s.windows != nil {
-		s.windows.OpenSettings()
-	}
-}

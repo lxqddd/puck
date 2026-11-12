@@ -7,6 +7,7 @@ export const EVENTS = {
   mascotScale: 'mascot:scale',
   themeChanged: 'theme:changed',
   bubbleShow: 'bubble:show',
+  navigateRoute: 'navigate:route',
 } as const
 
 export type ChatState = 'idle' | 'thinking' | 'speaking'
@@ -51,6 +52,10 @@ export interface BubbleState {
 export interface BubbleShowEvent {
   text: string
   side: BubbleSide
+}
+
+export interface NavigateRouteEvent {
+  route: string
 }
 
 export type ProviderType = 'openai-compatible' | 'anthropic' | 'gemini'

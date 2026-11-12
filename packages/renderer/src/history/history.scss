@@ -1,0 +1,62 @@
+.app-shell--history {
+  background:
+    radial-gradient(circle at 8% -10%, rgba(63, 201, 165, 0.16), transparent 45%),
+    radial-gradient(circle at 92% -4%, rgba(255, 209, 102, 0.1), transparent 40%),
+    var(--puck-cream);
+}
+
+html.dark .app-shell--history {
+  background:
+    radial-gradient(circle at 8% -10%, rgba(95, 216, 180, 0.14), transparent 44%),
+    radial-gradient(circle at 92% -4%, rgba(242, 199, 109, 0.06), transparent 38%),
+    var(--puck-cream);
+}
+
+html.dark .history-header {
+  background: var(--puck-panel-soft);
+}
+
+.history-header {
+  .history-title {
+    margin: 0 0 2px;
+    color: var(--puck-ink);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .history-subtitle {
+    display: block;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}
+
+.history-list {
+  .ant-list-item {
+    padding: 0;
+    border: none;
+  }
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.history-open {
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: color-mix(in srgb, var(--puck-mint) 8%, transparent);
+  }
+}

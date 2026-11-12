@@ -4,7 +4,6 @@ import type { ProviderConfig, ProviderTestResult, Settings, ThemeMode } from '@p
 import {
   Alert,
   Button,
-  ConfigProvider,
   Empty,
   Form,
   Input,
@@ -19,7 +18,6 @@ import {
   Typography,
 } from 'ant-design-vue'
 import { bridge } from '../bridge'
-import { useAntTheme } from '../shared/antdTheme'
 import PuckAvatar from '../shared/PuckAvatar.vue'
 import { useTheme } from '../shared/theme'
 
@@ -91,7 +89,6 @@ const modelOptions = computed(() => {
   return options
 })
 
-const antTheme = useAntTheme()
 const emptyImage = h(PuckAvatar, { class: 'mx-auto h-12 w-12 rounded-full opacity-70' })
 const { mode: themeMode, setTheme } = useTheme()
 const themeOptions: Array<{ value: ThemeMode; label: string }> = [
@@ -290,11 +287,10 @@ onMounted(async () => {
 </script>
 
 <template>
-  <ConfigProvider :theme="antTheme">
-    <div class="flex h-full flex-col">
-      <header
-        class="settings-header flex items-center justify-between gap-4 border-b border-puck-line px-6 pb-3 pl-[88px] pt-3 [-webkit-app-region:drag]"
-      >
+  <div class="flex h-full flex-col">
+    <header
+      class="settings-header flex items-center justify-between gap-4 border-b border-puck-line px-6 pb-3 pt-3 [-webkit-app-region:drag]"
+    >
         <div class="min-w-0">
           <Typography.Title :level="4" class="settings-title">设置</Typography.Title>
           <Typography.Text type="secondary" class="settings-subtitle">
@@ -547,5 +543,4 @@ onMounted(async () => {
         </Form>
       </div>
     </div>
-  </ConfigProvider>
 </template>

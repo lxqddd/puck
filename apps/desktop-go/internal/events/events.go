@@ -3,13 +3,14 @@ package events
 import "github.com/wailsapp/wails/v3/pkg/application"
 
 const (
-	ChatDelta    = "chat:delta"
-	ChatDone     = "chat:done"
-	ChatError    = "chat:error"
-	ChatState    = "chat:state"
-	MascotScale  = "mascot:scale"
-	ThemeChanged = "theme:changed"
-	BubbleShow   = "bubble:show"
+	ChatDelta     = "chat:delta"
+	ChatDone      = "chat:done"
+	ChatError     = "chat:error"
+	ChatState     = "chat:state"
+	MascotScale   = "mascot:scale"
+	ThemeChanged  = "theme:changed"
+	BubbleShow    = "bubble:show"
+	NavigateRoute = "navigate:route"
 )
 
 type ChatDeltaEvent struct {
@@ -47,6 +48,10 @@ type BubbleShowEvent struct {
 	Side string `json:"side"`
 }
 
+type NavigateRouteEvent struct {
+	Route string `json:"route"`
+}
+
 func Register() {
 	application.RegisterEvent[ChatDeltaEvent](ChatDelta)
 	application.RegisterEvent[ChatDoneEvent](ChatDone)
@@ -55,4 +60,5 @@ func Register() {
 	application.RegisterEvent[MascotScaleEvent](MascotScale)
 	application.RegisterEvent[ThemeChangedEvent](ThemeChanged)
 	application.RegisterEvent[BubbleShowEvent](BubbleShow)
+	application.RegisterEvent[NavigateRouteEvent](NavigateRoute)
 }

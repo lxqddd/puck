@@ -288,6 +288,9 @@ func (w *Windows) OpenChat() {
 	if win, ok := w.app.Window.GetByName("chat"); ok {
 		win.Show()
 		win.Focus()
+		if app := application.Get(); app != nil {
+			app.Event.Emit(puckevents.NavigateRoute, puckevents.NavigateRouteEvent{Route: "/chat"})
+		}
 		return
 	}
 
@@ -296,9 +299,9 @@ func (w *Windows) OpenChat() {
 		Title:            "Puck",
 		Width:            820,
 		Height:           680,
-		MinWidth:         560,
-		MinHeight:        480,
-		URL:              "/chat.html",
+		MinWidth:         720,
+		MinHeight:        540,
+		URL:              "/app.html",
 		BackgroundType:   application.BackgroundTypeSolid,
 		BackgroundColour: application.NewRGB(251, 247, 239),
 		Mac: application.MacWindow{
@@ -378,35 +381,6 @@ func (w *Windows) syncChatWebview(chat *application.WebviewWindow) {
 	chatSyncCooldown.Store(time.Now().Add(500 * time.Millisecond).UnixMilli())
 	chatSyncing.Store(false)
 	log.Printf("puck: chat webview synced to %dx%d", width, height)
-}
-
-func (w *Windows) OpenSettings() {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	if win, ok := w.app.Window.GetByName("settings"); ok {
-		win.Show()
-		win.Focus()
-		return
-	}
-
-	settings := w.app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Name:             "settings",
-		Title:            "Puck · 设置",
-		Width:            640,
-		Height:           560,
-		MinWidth:         520,
-		MinHeight:        420,
-		URL:              "/settings.html",
-		BackgroundType:   application.BackgroundTypeSolid,
-		BackgroundColour: application.NewRGB(251, 247, 239),
-		Mac: application.MacWindow{
-			TitleBar:                application.MacTitleBarHiddenInset,
-			InvisibleTitleBarHeight: 38,
-		},
-	})
-	settings.Show()
-	settings.Focus()
 }
 
 func (w *Windows) CreateTray() {

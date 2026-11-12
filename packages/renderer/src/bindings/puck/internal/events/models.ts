@@ -32,6 +32,10 @@ export interface MascotScaleEvent {
     "scale": number;
 }
 
+export interface NavigateRouteEvent {
+    "route": string;
+}
+
 export interface ThemeChangedEvent {
     "theme": string;
 }

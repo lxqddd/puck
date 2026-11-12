@@ -39,6 +39,11 @@ export const ChatState = "chat:state";
 export const MascotScale = "mascot:scale";
 
 /**
+ * Name of the custom event "navigate:route".
+ */
+export const NavigateRoute = "navigate:route";
+
+/**
  * Name of the custom event "theme:changed".
  */
 export const ThemeChanged = "theme:changed";

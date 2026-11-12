@@ -25,6 +25,10 @@ export function ListConversations(): $CancellablePromise<history$0.Conversation[
     return $Call.ByID(2068581124);
 }
 
+export function ListHistory(limit: number): $CancellablePromise<history$0.Conversation[] | null> {
+    return $Call.ByID(855601424, limit);
+}
+
 /**
  * Send 立即返回消息 ID 与会话 ID，流式内容通过事件推送给所有窗口。
  */

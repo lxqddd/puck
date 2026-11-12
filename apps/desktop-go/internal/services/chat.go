@@ -56,6 +56,19 @@ func (s *ChatService) ListConversations() ([]history.Conversation, error) {
 	return s.history.ListConversations(50)
 }
 
+func (s *ChatService) ListHistory(limit int) ([]history.Conversation, error) {
+	if s.history == nil {
+		return nil, fmt.Errorf("history store unavailable")
+	}
+	if limit <= 0 {
+		limit = 500
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	return s.history.ListConversations(limit)
+}
+
 func (s *ChatService) GetMessages(conversationID string) ([]history.Message, error) {
 	if s.history == nil {
 		return nil, fmt.Errorf("history store unavailable")

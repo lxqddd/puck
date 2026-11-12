@@ -8,5 +8,6 @@ export type {
     ChatErrorEvent,
     ChatStateEvent,
     MascotScaleEvent,
+    NavigateRouteEvent,
     ThemeChangedEvent
 } from "./models.js";

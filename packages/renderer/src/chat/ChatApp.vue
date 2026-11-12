@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, h, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, h, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { Conversation, ProviderConfig, StoredMessage } from '@puck/contract'
 import {
   Actions,
@@ -8,7 +8,6 @@ import {
   Prompts,
   Sender,
   Welcome,
-  XProvider,
 } from 'ant-design-x-vue'
 import type {
   BubbleItemType,
@@ -17,10 +16,10 @@ import type {
   RoleType,
 } from 'ant-design-x-vue'
 import type { MenuProps } from 'ant-design-vue'
+import { useRoute, useRouter } from 'vue-router'
 import { bridge } from '../bridge'
 import { persona } from '../character'
 import PuckAvatar from '../shared/PuckAvatar.vue'
-import { useAntTheme } from '../shared/antdTheme'
 
 interface Message {
   id: string
@@ -42,7 +41,9 @@ const unsubscribers: Array<() => void> = []
 
 const suggestions = ['帮我想个周末计划', '给我讲个冷笑话', '解释一下什么是 RAG']
 
-const antTheme = useAntTheme()
+const route = useRoute()
+const router = useRouter()
+let activatedOnce = false
 
 let pendingMessageId = ''
 let viewEpoch = 0
@@ -53,10 +54,6 @@ const streamingMessageId = computed(() => {
   const last = messages.value[messages.value.length - 1]
   return last && last.role === 'assistant' ? last.id : ''
 })
-
-function openSettings() {
-  void bridge.openSettings()
-}
 
 const puckAvatar = h(PuckAvatar, { class: 'h-[30px] w-[30px] rounded-full' })
 
@@ -239,6 +236,12 @@ function onProviderSelect(event: Event) {
   selectedProviderId.value = (event.target as HTMLSelectElement).value
 }
 
+function syncRouteToConversation(id: string) {
+  if (route.name !== 'chat') return
+  if (route.params.id === id) return
+  void router.replace({ name: 'chat', params: { id } })
+}
+
 async function openConversation(id: string) {
   const epoch = ++viewEpoch
   activeConversationId.value = id
@@ -248,6 +251,7 @@ async function openConversation(id: string) {
     if (epoch !== viewEpoch) return
     messages.value = stored.map(fromStored)
     applyConversationProvider(id)
+    syncRouteToConversation(id)
   } catch (error) {
     if (epoch === viewEpoch) {
       setError(error)
@@ -262,6 +266,9 @@ function newConversation() {
   errorText.value = ''
   input.value = ''
   selectedProviderId.value = activeProviderId.value || providers.value[0]?.id || ''
+  if (route.name === 'chat' && route.params.id) {
+    void router.replace({ name: 'chat' })
+  }
 }
 
 async function removeConversation(id: string) {
@@ -301,6 +308,9 @@ async function send(textInput?: string) {
       return
     }
     activeConversationId.value = result.conversationId
+    if (route.name === 'chat' && route.params.id !== result.conversationId) {
+      void router.replace({ name: 'chat', params: { id: result.conversationId } })
+    }
     messages.value.push({ id: result.messageId, role: 'assistant', text: '' })
     await refreshConversations()
   } catch (error) {
@@ -350,11 +360,47 @@ onMounted(async () => {
   )
 
   await Promise.all([loadProviders(), refreshConversations()])
-  const mostRecent = conversations.value[0]
-  if (mostRecent) await openConversation(mostRecent.id)
+  const routeId = typeof route.params.id === 'string' ? route.params.id : ''
+  if (routeId) {
+    await openConversation(routeId)
+  } else {
+    const mostRecent = conversations.value[0]
+    if (mostRecent) await openConversation(mostRecent.id)
+  }
 
   window.addEventListener('focus', onWindowFocus)
 })
+
+onActivated(async () => {
+  if (!activatedOnce) {
+    activatedOnce = true
+    return
+  }
+  await Promise.all([loadProviders(), refreshConversations()])
+  if (
+    activeConversationId.value &&
+    !conversations.value.some(
+      (conversation) => conversation.id === activeConversationId.value,
+    )
+  ) {
+    newConversation()
+    return
+  }
+  const routeId = typeof route.params.id === 'string' ? route.params.id : ''
+  if (routeId && routeId !== activeConversationId.value) {
+    await openConversation(routeId)
+  }
+})
+
+watch(
+  () => route.params.id,
+  (id) => {
+    if (route.name !== 'chat') return
+    const next = typeof id === 'string' ? id : ''
+    if (!next || next === activeConversationId.value) return
+    void openConversation(next)
+  },
+)
 
 function onWindowFocus() {
   void loadProviders()
@@ -368,11 +414,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <XProvider :theme="antTheme">
-    <div class="flex h-full w-full flex-col">
-      <header
-        class="chat-header flex items-center justify-between gap-4 border-b border-puck-line px-6 pb-2 pl-[88px] pt-2 [-webkit-app-region:drag]"
-      >
+  <div class="flex h-full w-full flex-col">
+    <header
+      class="chat-header flex items-center justify-between gap-4 border-b border-puck-line px-6 pb-2 pt-2 [-webkit-app-region:drag]"
+    >
         <div class="flex items-center gap-3">
           <PuckAvatar
             class="h-8 w-8 rounded-full shadow-[0_4px_10px_rgba(53,189,152,0.35)]"
@@ -397,31 +442,6 @@ onBeforeUnmount(() => {
             :creation="creation"
             :groupable="true"
           />
-          <div class="mt-2 border-t border-puck-line pt-2">
-            <button
-              type="button"
-              class="flex w-full items-center gap-2.5 rounded-[10px] border-none bg-transparent px-2.5 py-2 text-left text-[13px] font-medium text-puck-muted transition-colors hover:bg-puck-mint/10 hover:text-puck-ink"
-              title="设置"
-              aria-label="设置"
-              @click="openSettings"
-            >
-              <svg
-                class="h-4 w-4 flex-none"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <circle cx="12" cy="12" r="3" />
-                <path
-                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
-                />
-              </svg>
-              <span>设置</span>
-            </button>
-          </div>
         </aside>
 
         <section class="flex min-w-0 flex-1 flex-col">
@@ -538,5 +558,4 @@ onBeforeUnmount(() => {
         </div>
       </transition>
     </div>
-  </XProvider>
 </template>

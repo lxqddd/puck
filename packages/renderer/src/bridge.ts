@@ -9,6 +9,7 @@ import type {
   ChatStateEvent,
   Conversation,
   MascotScaleEvent,
+  NavigateRouteEvent,
   ProviderConfig,
   ProviderTestResult,
   SendResult,
@@ -26,7 +27,6 @@ function subscribe<T>(name: string, callback: (data: T) => void): () => void {
 
 export const bridge = {
   openChat: () => MascotService.OpenChat(),
-  openSettings: () => MascotService.OpenSettings(),
   setHitRegion: (
     region: { x: number; y: number; width: number; height: number },
     scale: number,
@@ -46,6 +46,8 @@ export const bridge = {
   sendChat: (text: string, conversationId: string, providerId: string): Promise<SendResult> =>
     ChatService.Send(text, conversationId, providerId),
   listConversations: async (): Promise<Conversation[]> => (await ChatService.ListConversations()) ?? [],
+  listHistory: async (limit: number): Promise<Conversation[]> =>
+    (await ChatService.ListHistory(limit)) ?? [],
   getMessages: async (conversationId: string): Promise<StoredMessage[]> =>
     ((await ChatService.GetMessages(conversationId)) ?? []) as StoredMessage[],
   deleteConversation: (conversationId: string) => ChatService.DeleteConversation(conversationId),
@@ -82,4 +84,6 @@ export const bridge = {
     subscribe(EVENTS.themeChanged, callback),
   onBubbleShow: (callback: (event: BubbleShowEvent) => void) =>
     subscribe(EVENTS.bubbleShow, callback),
+  onNavigateRoute: (callback: (event: NavigateRouteEvent) => void) =>
+    subscribe(EVENTS.navigateRoute, callback),
 }
