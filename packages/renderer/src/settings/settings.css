@@ -180,6 +180,21 @@ body.settings-body {
   box-shadow: 0 0 0 3px rgba(63, 201, 165, 0.14);
 }
 
+.model-row {
+  display: flex;
+  gap: 10px;
+}
+
+.model-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.model-row .secondary {
+  flex: none;
+  white-space: nowrap;
+}
+
 .hint {
   margin: 0;
   font-size: 12px;
@@ -261,6 +276,27 @@ body.settings-body {
 .saved {
   font-size: 13px;
   color: var(--puck-mint-deep);
+}
+
+.pending {
+  font-size: 13px;
+  font-weight: 600;
+  color: #b0741a;
+}
+
+.key-mask {
+  margin: -6px 0 0;
+  font-size: 12px;
+  color: var(--puck-muted);
+}
+
+.key-mask code {
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(23, 52, 45, 0.06);
+  color: var(--puck-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
 }
 
 .error {

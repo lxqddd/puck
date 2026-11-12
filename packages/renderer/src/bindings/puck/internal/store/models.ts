@@ -8,6 +8,7 @@ export interface ProviderConfig {
     "baseURL": string;
     "model": string;
     "hasKey": boolean;
+    "keyMask"?: string;
 }
 
 export interface Settings {

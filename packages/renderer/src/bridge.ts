@@ -57,6 +57,8 @@ export const bridge = {
     SettingsService.SaveProvider(provider, apiKey),
   testProvider: (provider: ProviderConfig, apiKey: string): Promise<ProviderTestResult> =>
     SettingsService.TestProvider(provider, apiKey),
+  listModels: async (provider: ProviderConfig, apiKey: string): Promise<string[]> =>
+    (await SettingsService.ListModels(provider, apiKey)) ?? [],
   deleteProvider: (id: string) => SettingsService.DeleteProvider(id),
   setActiveProvider: (id: string) => SettingsService.SetActiveProvider(id),
 

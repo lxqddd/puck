@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zalando/go-keyring"
+
 	"puck/internal/ai"
 	"puck/internal/secure"
 	"puck/internal/store"
@@ -35,9 +37,28 @@ func (s *SettingsService) Get() (store.Settings, error) {
 		return settings, err
 	}
 	for _, provider := range settings.Providers {
-		provider.HasKey = s.keys.Has(provider.ID)
+		key, err := s.keys.Get(provider.ID)
+		if err == nil && strings.TrimSpace(key) != "" {
+			provider.HasKey = true
+			provider.KeyMask = maskKey(key)
+			continue
+		}
+		provider.HasKey = false
+		provider.KeyMask = ""
 	}
 	return settings, nil
+}
+
+// maskKey 只回传首尾少量字符，完整 Key 始终留在钥匙串里。
+func maskKey(key string) string {
+	key = strings.TrimSpace(key)
+	if key == "" {
+		return ""
+	}
+	if len(key) <= 8 {
+		return "••••••••"
+	}
+	return key[:3] + "••••••••" + key[len(key)-4:]
 }
 
 func (s *SettingsService) SaveProvider(provider store.ProviderConfig, apiKey string) (store.ProviderConfig, error) {
@@ -91,7 +112,13 @@ func (s *SettingsService) SaveProvider(provider store.ProviderConfig, apiKey str
 			}
 		}
 	}
-	saved.HasKey = s.keys.Has(saved.ID)
+	if key, err := s.keys.Get(saved.ID); err == nil && strings.TrimSpace(key) != "" {
+		saved.HasKey = true
+		saved.KeyMask = maskKey(key)
+	} else {
+		saved.HasKey = false
+		saved.KeyMask = ""
+	}
 	return saved, nil
 }
 
@@ -138,11 +165,47 @@ func (s *SettingsService) DeleteProvider(id string) error {
 	return s.keys.Delete(id)
 }
 
+// ListModels 拉取供应商的模型列表；apiKey 为空时使用已保存的 Key。
+func (s *SettingsService) ListModels(provider store.ProviderConfig, apiKey string) ([]string, error) {
+	key := strings.TrimSpace(apiKey)
+	if key == "" && strings.TrimSpace(provider.ID) != "" {
+		stored, err := s.keys.Get(strings.TrimSpace(provider.ID))
+		if err != nil && !errors.Is(err, keyring.ErrNotFound) {
+			return nil, fmt.Errorf("读取系统钥匙串失败：%w", err)
+		}
+		key = stored
+	}
+
+	providerType := strings.TrimSpace(provider.Type)
+	if providerType == "" {
+		providerType = store.ProviderTypeOpenAI
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	models, err := ai.ListModels(ctx, providerType, provider.BaseURL, key)
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, fmt.Errorf("获取模型列表超时（15 秒）")
+		}
+		return nil, err
+	}
+	if len(models) == 0 {
+		return nil, fmt.Errorf("没有获取到模型，请手动填写模型名")
+	}
+	return models, nil
+}
+
 // TestProvider 用当前表单内容发一条最小请求，验证地址、模型与 Key 是否可用。
 func (s *SettingsService) TestProvider(provider store.ProviderConfig, apiKey string) ProviderTestResult {
 	key := strings.TrimSpace(apiKey)
 	if key == "" && strings.TrimSpace(provider.ID) != "" {
-		key, _ = s.keys.Get(strings.TrimSpace(provider.ID))
+		stored, err := s.keys.Get(strings.TrimSpace(provider.ID))
+		if err != nil && !errors.Is(err, keyring.ErrNotFound) {
+			return ProviderTestResult{OK: false, Message: fmt.Sprintf("读取系统钥匙串失败：%v", err)}
+		}
+		key = stored
 	}
 
 	chatProvider, model, err := buildProvider(provider, key)

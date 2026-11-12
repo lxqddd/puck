@@ -2,6 +2,7 @@ package secure
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/zalando/go-keyring"
 )
@@ -16,6 +17,7 @@ func New() *Keys {
 }
 
 func (k *Keys) Set(providerID, key string) error {
+	key = strings.TrimSpace(key)
 	if key == "" {
 		return nil
 	}

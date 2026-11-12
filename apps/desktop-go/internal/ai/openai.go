@@ -61,7 +61,7 @@ func (p *OpenAICompatible) Chat(ctx context.Context, req ChatRequest, onEvent fu
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return fmt.Errorf("provider returned %s: %s", resp.Status, strings.TrimSpace(string(body)))
+		return providerHTTPError(resp.StatusCode, string(body))
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
@@ -99,4 +99,18 @@ func (p *OpenAICompatible) Chat(ctx context.Context, req ChatRequest, onEvent fu
 		}
 	}
 	return scanner.Err()
+}
+
+func providerHTTPError(status int, body string) error {
+	body = strings.TrimSpace(body)
+	switch status {
+	case 401, 403:
+		return fmt.Errorf("鉴权失败（HTTP %d）：API Key 无效或无权限，请检查后重新填写。服务返回：%s", status, body)
+	case 404:
+		return fmt.Errorf("接口或模型不存在（HTTP 404）：请检查服务地址与模型名。服务返回：%s", body)
+	case 429:
+		return fmt.Errorf("请求过于频繁或额度不足（HTTP 429）。服务返回：%s", body)
+	default:
+		return fmt.Errorf("服务返回 HTTP %d：%s", status, body)
+	}
 }

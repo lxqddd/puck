@@ -10,6 +10,7 @@ interface Draft {
   baseURL: string
   model: string
   hasKey: boolean
+  keyMask: string
 }
 
 function emptyDraft(): Draft {
@@ -20,6 +21,7 @@ function emptyDraft(): Draft {
     baseURL: '',
     model: '',
     hasKey: false,
+    keyMask: '',
   }
 }
 
@@ -32,9 +34,13 @@ const testing = ref(false)
 const saved = ref(false)
 const errorText = ref('')
 const testResult = ref<ProviderTestResult | null>(null)
+const models = ref<string[]>([])
+const modelsLoading = ref(false)
+const modelsError = ref('')
 
 const providers = computed(() => settings.value.providers ?? [])
 const isExisting = computed(() => providers.value.some((provider) => provider.id === draft.value.id))
+const keyPending = computed(() => apiKey.value.trim().length > 0)
 
 const DEFAULT_MODELS: Record<string, string> = {
   'openai-compatible': 'deepseek-chat',
@@ -58,10 +64,12 @@ function edit(provider: ProviderConfig) {
     baseURL: provider.baseURL,
     model: provider.model,
     hasKey: provider.hasKey,
+    keyMask: provider.keyMask ?? '',
   }
   apiKey.value = ''
   errorText.value = ''
   testResult.value = null
+  resetModels()
 }
 
 function addProvider() {
@@ -69,9 +77,51 @@ function addProvider() {
   apiKey.value = ''
   errorText.value = ''
   testResult.value = null
+  resetModels()
+}
+
+let modelsRequestId = 0
+
+function resetModels() {
+  modelsRequestId += 1
+  models.value = []
+  modelsError.value = ''
+  modelsLoading.value = false
+}
+
+async function fetchModels() {
+  if (modelsLoading.value) return
+  if (draft.value.type === 'openai-compatible' && !draft.value.baseURL.trim()) {
+    resetModels()
+    modelsError.value = '请先填写服务地址'
+    return
+  }
+  const requestId = ++modelsRequestId
+  modelsLoading.value = true
+  modelsError.value = ''
+  try {
+    const list = await bridge.listModels(draftProvider(), apiKey.value)
+    if (requestId !== modelsRequestId) return
+    models.value = list
+  } catch (error) {
+    if (requestId !== modelsRequestId) return
+    models.value = []
+    modelsError.value = `未能获取模型列表：${error instanceof Error ? error.message : String(error)}`
+  } finally {
+    if (requestId === modelsRequestId) modelsLoading.value = false
+  }
+}
+
+function onApiKeyBlur() {
+  if (apiKey.value.trim()) void fetchModels()
+}
+
+function onModelSelect(event: Event) {
+  draft.value.model = (event.target as HTMLSelectElement).value
 }
 
 function onTypeChange() {
+  resetModels()
   const knownModels = Object.values(DEFAULT_MODELS)
   if (!draft.value.model.trim() || knownModels.includes(draft.value.model.trim())) {
     draft.value.model = modelPlaceholder.value
@@ -104,6 +154,7 @@ function draftProvider(): ProviderConfig {
     baseURL: draft.value.baseURL.trim(),
     model: draft.value.model.trim(),
     hasKey: draft.value.hasKey,
+    keyMask: draft.value.keyMask,
   }
 }
 
@@ -240,18 +291,48 @@ onMounted(async () => {
             v-model="draft.baseURL"
             placeholder="https://api.deepseek.com/v1"
             autocomplete="off"
+            @input="resetModels"
           />
         </label>
 
-        <label v-else-if="draft.type === 'anthropic'">
+        <label v-else>
           <span>自定义地址（可选）</span>
-          <input v-model="draft.baseURL" placeholder="留空使用 Anthropic 官方 API" autocomplete="off" />
+          <input
+            v-model="draft.baseURL"
+            :placeholder="
+              draft.type === 'gemini' ? '留空使用 Gemini 官方 API' : '留空使用 Anthropic 官方 API'
+            "
+            autocomplete="off"
+            @input="resetModels"
+          />
         </label>
 
         <label>
           <span>模型</span>
-          <input v-model="draft.model" :placeholder="modelPlaceholder" autocomplete="off" />
+          <div class="model-row">
+            <input v-model="draft.model" :placeholder="modelPlaceholder" autocomplete="off" />
+            <button
+              type="button"
+              class="secondary"
+              :disabled="modelsLoading"
+              @click="fetchModels"
+            >
+              {{ modelsLoading ? '获取中…' : '获取模型' }}
+            </button>
+          </div>
         </label>
+
+        <label v-if="models.length > 0">
+          <span>可选模型<em>{{ models.length }} 个</em></span>
+          <select :value="draft.model" @change="onModelSelect">
+            <option value="" disabled>从列表选择</option>
+            <option v-if="draft.model && !models.includes(draft.model)" :value="draft.model">
+              {{ draft.model }}（当前）
+            </option>
+            <option v-for="model in models" :key="model" :value="model">{{ model }}</option>
+          </select>
+        </label>
+        <p v-else-if="modelsError" class="hint">{{ modelsError }}</p>
 
         <label>
           <span>API Key <em v-if="draft.hasKey">已保存</em></span>
@@ -260,11 +341,18 @@ onMounted(async () => {
             type="password"
             :placeholder="draft.hasKey ? '留空保持不变' : 'sk-…'"
             autocomplete="off"
+            @input="resetModels"
+            @blur="onApiKeyBlur"
           />
         </label>
 
+        <p v-if="draft.hasKey && draft.keyMask && !keyPending" class="key-mask">
+          已保存：<code>{{ draft.keyMask }}</code>（留空保持不变）
+        </p>
+
         <p class="hint">
-          OpenAI 兼容支持 OpenAI、DeepSeek、通义、Kimi、智谱、Ollama 等；Anthropic 与 Gemini 走官方
+          填入 API Key 后会自动获取该供应商的模型列表，也可点“获取模型”手动刷新。OpenAI
+          兼容支持 OpenAI、DeepSeek、通义、Kimi、智谱、Ollama 等；Anthropic 与 Gemini 走官方
           SDK。点击左侧圆点切换对话使用的供应商。
         </p>
 
@@ -284,7 +372,12 @@ onMounted(async () => {
             删除
           </button>
           <span v-if="saved" class="saved">已保存</span>
+          <span v-else-if="keyPending" class="pending">Key 未保存</span>
         </div>
+
+        <p v-if="keyPending" class="hint">
+          API Key 填好后需要点“{{ isExisting ? '保存供应商' : '添加供应商' }}”才会写入钥匙串。
+        </p>
 
         <p v-if="testResult" class="test-result" :class="{ ok: testResult.ok }">
           {{
@@ -292,6 +385,10 @@ onMounted(async () => {
               ? `${testResult.message} · ${testResult.latencyMs} ms`
               : testResult.message
           }}
+        </p>
+
+        <p v-if="testResult?.ok && keyPending" class="hint">
+          连接成功，但新 Key 尚未保存，请点“保存供应商”。
         </p>
 
         <p v-if="errorText" class="error">{{ errorText }}</p>

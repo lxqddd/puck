@@ -24,6 +24,7 @@ type ProviderConfig struct {
 	BaseURL string `json:"baseURL"`
 	Model   string `json:"model"`
 	HasKey  bool   `json:"hasKey"`
+	KeyMask string `json:"keyMask,omitempty"`
 }
 
 type Settings struct {
@@ -111,6 +112,7 @@ func (s *SettingsStore) saveLocked(settings Settings) error {
 	normalizeSettings(&settings)
 	for _, provider := range settings.Providers {
 		provider.HasKey = false
+		provider.KeyMask = ""
 	}
 	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
 		return err

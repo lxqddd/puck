@@ -21,6 +21,13 @@ export function Get(): $CancellablePromise<store$0.Settings> {
     return $Call.ByID(3213148265);
 }
 
+/**
+ * ListModels 拉取供应商的模型列表；apiKey 为空时使用已保存的 Key。
+ */
+export function ListModels(provider: store$0.ProviderConfig, apiKey: string): $CancellablePromise<string[] | null> {
+    return $Call.ByID(3766078021, provider, apiKey);
+}
+
 export function SaveProvider(provider: store$0.ProviderConfig, apiKey: string): $CancellablePromise<store$0.ProviderConfig> {
     return $Call.ByID(2648345239, provider, apiKey);
 }
