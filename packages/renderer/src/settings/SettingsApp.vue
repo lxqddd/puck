@@ -11,6 +11,7 @@ interface Draft {
   model: string
   hasKey: boolean
   keyMask: string
+  webSearch: boolean
 }
 
 function emptyDraft(): Draft {
@@ -22,6 +23,7 @@ function emptyDraft(): Draft {
     model: '',
     hasKey: false,
     keyMask: '',
+    webSearch: true,
   }
 }
 
@@ -65,6 +67,7 @@ function edit(provider: ProviderConfig) {
     model: provider.model,
     hasKey: provider.hasKey,
     keyMask: provider.keyMask ?? '',
+    webSearch: provider.webSearch !== false,
   }
   apiKey.value = ''
   errorText.value = ''
@@ -155,6 +158,7 @@ function draftProvider(): ProviderConfig {
     model: draft.value.model.trim(),
     hasKey: draft.value.hasKey,
     keyMask: draft.value.keyMask,
+    webSearch: draft.value.webSearch,
   }
 }
 
@@ -333,6 +337,14 @@ onMounted(async () => {
           </select>
         </label>
         <p v-else-if="modelsError" class="hint">{{ modelsError }}</p>
+
+        <label v-if="draft.type === 'openai-compatible'" class="checkbox-row">
+          <input v-model="draft.webSearch" type="checkbox" />
+          <span>允许联网搜索（模型自动调用）</span>
+        </label>
+        <p v-if="draft.type === 'openai-compatible' && draft.webSearch" class="hint">
+          DeepSeek 模型走 DeepSeek 搜索/抓取；其他兼容模型使用 Tavily keyless（额度较低，被限流时会自动降级为直接回答）。
+        </p>
 
         <label>
           <span>API Key <em v-if="draft.hasKey">已保存</em></span>

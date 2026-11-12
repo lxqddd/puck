@@ -9,6 +9,7 @@ export interface ProviderConfig {
     "model": string;
     "hasKey": boolean;
     "keyMask"?: string;
+    "webSearch"?: boolean | null;
 }
 
 export interface Settings {

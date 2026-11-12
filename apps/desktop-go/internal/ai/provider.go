@@ -1,6 +1,9 @@
 package ai
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 type Role string
 
@@ -15,10 +18,33 @@ type Message struct {
 	Content string `json:"content"`
 }
 
+type ToolDefinition struct {
+	Name        string
+	Description string
+	Parameters  json.RawMessage
+}
+
+type ToolCall struct {
+	ID        string
+	Name      string
+	Arguments json.RawMessage
+}
+
+type ToolResult struct {
+	CallID  string
+	Name    string
+	Content string
+	IsError bool
+}
+
+type ToolExecutor func(ctx context.Context, call ToolCall) (ToolResult, error)
+
 type ChatRequest struct {
-	Model    string
-	System   string
-	Messages []Message
+	Model        string
+	System       string
+	Messages     []Message
+	Tools        []ToolDefinition
+	ToolExecutor ToolExecutor
 }
 
 type EventType string

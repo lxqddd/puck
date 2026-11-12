@@ -18,13 +18,14 @@ const (
 )
 
 type ProviderConfig struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	Type    string `json:"type"`
-	BaseURL string `json:"baseURL"`
-	Model   string `json:"model"`
-	HasKey  bool   `json:"hasKey"`
-	KeyMask string `json:"keyMask,omitempty"`
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Type      string `json:"type"`
+	BaseURL   string `json:"baseURL"`
+	Model     string `json:"model"`
+	HasKey    bool   `json:"hasKey"`
+	KeyMask   string `json:"keyMask,omitempty"`
+	WebSearch *bool  `json:"webSearch,omitempty"`
 }
 
 type Settings struct {
@@ -163,6 +164,14 @@ func normalizeSettings(settings *Settings) {
 		}
 		provider.BaseURL = strings.TrimSpace(provider.BaseURL)
 		provider.Model = strings.TrimSpace(provider.Model)
+		if provider.Type == ProviderTypeOpenAI {
+			if provider.WebSearch == nil {
+				enabled := true
+				provider.WebSearch = &enabled
+			}
+		} else {
+			provider.WebSearch = nil
+		}
 		seen[provider.ID] = true
 		providers = append(providers, provider)
 	}
