@@ -313,13 +313,12 @@ onMounted(async () => {
 
       <div v-else class="flex min-h-0 flex-1">
         <aside
-          class="settings-rail flex min-h-0 w-[210px] flex-none flex-col border-r border-puck-line bg-white/45"
+          class="settings-rail flex min-h-0 w-[218px] flex-none flex-col border-r border-puck-line"
         >
-          <div class="flex items-center justify-between px-3 pb-2 pt-3.5">
-            <Typography.Text type="secondary" class="text-xs font-semibold">
-              供应商
-            </Typography.Text>
-            <Button type="link" size="small" class="settings-add-button" @click="addProvider">
+          <div class="settings-rail-head">
+            <span class="settings-rail-title">供应商</span>
+            <span class="settings-rail-count">{{ providers.length }}</span>
+            <Button size="small" class="settings-add-button" @click="addProvider">
               ＋ 添加
             </Button>
           </div>
@@ -335,8 +334,8 @@ onMounted(async () => {
               <List.Item class="provider-list-item">
                 <button
                   type="button"
-                  class="flex w-full items-center gap-2 rounded-[10px] border-none bg-transparent px-2.5 py-[9px] text-left text-[13px] text-puck-ink transition-colors hover:bg-puck-ink/5 dark:hover:bg-puck-surface"
-                  :class="{ 'bg-puck-mint/16!': item.id === draft.id }"
+                  class="provider-card"
+                  :class="{ 'provider-card--active': item.id === draft.id }"
                   @click="edit(item)"
                 >
                   <Tooltip
@@ -345,16 +344,18 @@ onMounted(async () => {
                     "
                   >
                     <span
-                      class="h-2.5 w-2.5 flex-none rounded-full border-[1.5px] border-puck-muted"
-                      :class="{
-                        'border-puck-mint bg-puck-mint shadow-[0_0_0_2px_rgba(63,201,165,0.2)]':
-                          item.id === settings.activeProviderId,
-                      }"
+                      class="provider-dot"
+                      :class="{ 'provider-dot--on': item.id === settings.activeProviderId }"
                       @click.stop="activate(item.id)"
                     ></span>
                   </Tooltip>
-                  <span class="flex-1 truncate">{{ item.name }}</span>
-                  <span class="text-[11px] text-puck-muted">{{ typeLabel(item.type) }}</span>
+                  <span class="provider-meta">
+                    <span class="provider-name">{{ item.name }}</span>
+                    <span class="provider-sub">
+                      {{ typeLabel(item.type)
+                      }}<template v-if="item.id === settings.activeProviderId"> · 使用中</template>
+                    </span>
+                  </span>
                 </button>
               </List.Item>
             </template>
@@ -364,182 +365,279 @@ onMounted(async () => {
             :image="emptyImage"
             class="my-6"
             description="还没有供应商"
-          />
+          >
+            <Typography.Text type="secondary" class="settings-rail-empty-hint">
+              点上方“添加”创建第一个供应商
+            </Typography.Text>
+          </Empty>
         </aside>
 
         <Form
           :model="draft"
           layout="vertical"
-          class="settings-form min-w-0 flex-1 overflow-y-auto px-7 pb-7 pt-5"
+          class="settings-form min-w-0 flex-1"
           @finish="save"
         >
-          <Form.Item label="名称">
-            <Input v-model:value="draft.name" placeholder="例如 DeepSeek" autocomplete="off" />
-          </Form.Item>
+          <div class="settings-scroll">
+            <section class="settings-section">
+              <header class="settings-section-head">
+                <span class="settings-section-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                  </svg>
+                </span>
+                <div class="settings-section-heading">
+                  <h2 class="settings-section-title">连接方式</h2>
+                  <p class="settings-section-desc">选择供应商类型并填写接口地址</p>
+                </div>
+              </header>
 
-          <Form.Item label="类型">
-            <Select
-              v-model:value="draft.type"
-              :options="typeOptions"
-              @change="onTypeChange"
-            />
-          </Form.Item>
+              <div class="settings-grid-2">
+                <Form.Item label="名称">
+                  <Input v-model:value="draft.name" placeholder="例如 DeepSeek" autocomplete="off" />
+                </Form.Item>
+                <Form.Item label="类型">
+                  <Select v-model:value="draft.type" :options="typeOptions" @change="onTypeChange" />
+                </Form.Item>
+              </div>
 
-          <Form.Item v-if="draft.type === 'openai-compatible'" label="服务地址" required>
-            <Input
-              v-model:value="draft.baseURL"
-              placeholder="https://api.deepseek.com/v1"
-              autocomplete="off"
-              @change="resetModels"
-            />
-          </Form.Item>
+              <Form.Item v-if="draft.type === 'openai-compatible'" label="服务地址" required>
+                <Input
+                  v-model:value="draft.baseURL"
+                  placeholder="https://api.deepseek.com/v1"
+                  autocomplete="off"
+                  @change="resetModels"
+                />
+              </Form.Item>
+              <Form.Item v-else label="自定义地址（可选）">
+                <Input
+                  v-model:value="draft.baseURL"
+                  :placeholder="
+                    draft.type === 'gemini'
+                      ? '留空使用 Gemini 官方 API'
+                      : '留空使用 Anthropic 官方 API'
+                  "
+                  autocomplete="off"
+                  @change="resetModels"
+                />
+              </Form.Item>
+            </section>
 
-          <Form.Item v-else label="自定义地址（可选）">
-            <Input
-              v-model:value="draft.baseURL"
-              :placeholder="
-                draft.type === 'gemini'
-                  ? '留空使用 Gemini 官方 API'
-                  : '留空使用 Anthropic 官方 API'
-              "
-              autocomplete="off"
-              @change="resetModels"
-            />
-          </Form.Item>
+            <section class="settings-section">
+              <header class="settings-section-head">
+                <span class="settings-section-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M12 3l1.9 5.2L19 10l-5.1 1.8L12 17l-1.9-5.2L5 10l5.1-1.8z" />
+                    <path d="M19 15l.9 2.4L22 18l-2.1.7L19 21l-.9-2.3L16 18l2.1-.6z" />
+                  </svg>
+                </span>
+                <div class="settings-section-heading">
+                  <h2 class="settings-section-title">模型</h2>
+                  <p class="settings-section-desc">对话使用的默认模型</p>
+                </div>
+              </header>
 
-          <div class="flex items-start gap-2.5">
-            <Form.Item label="模型" required class="min-w-0 flex-1">
-              <Input
-                v-model:value="draft.model"
-                :placeholder="modelPlaceholder"
-                autocomplete="off"
-              />
-            </Form.Item>
-            <Form.Item label=" " class="flex-none">
-              <Button :loading="modelsLoading" @click="fetchModels">获取模型</Button>
-            </Form.Item>
-          </div>
+              <Form.Item label="模型" required>
+                <div class="flex items-center gap-2.5">
+                  <Input
+                    v-model:value="draft.model"
+                    class="min-w-0 flex-1"
+                    :placeholder="modelPlaceholder"
+                    autocomplete="off"
+                  />
+                  <Button :loading="modelsLoading" class="settings-fetch-button" @click="fetchModels">
+                    获取模型
+                  </Button>
+                </div>
+              </Form.Item>
 
-          <Form.Item v-if="models.length > 0">
-            <template #label>
-              <span>可选模型</span>
-              <Tag color="success" class="ml-1.5">{{ models.length }} 个</Tag>
-            </template>
-            <Select
-              v-model:value="draft.model"
-              :options="modelOptions"
-              show-search
-              placeholder="从列表选择"
-            />
-          </Form.Item>
-          <Typography.Text
-            v-else-if="modelsError"
-            type="warning"
-            class="block text-xs leading-relaxed"
-          >
-            {{ modelsError }}
-          </Typography.Text>
+              <Form.Item v-if="models.length > 0">
+                <template #label>
+                  <span>可选模型</span>
+                  <Tag color="success" class="ml-1.5">{{ models.length }} 个</Tag>
+                </template>
+                <Select
+                  v-model:value="draft.model"
+                  :options="modelOptions"
+                  show-search
+                  placeholder="从列表选择"
+                />
+              </Form.Item>
+              <Typography.Text v-else-if="modelsError" type="warning" class="settings-hint">
+                {{ modelsError }}
+              </Typography.Text>
+            </section>
 
-          <template v-if="draft.type === 'openai-compatible'">
-            <div class="flex items-center gap-2.5 text-[13px] text-puck-ink">
-              <Switch v-model:checked="draft.webSearch" />
-              <span>允许联网搜索（模型自动调用）</span>
+            <section class="settings-section">
+              <header class="settings-section-head">
+                <span class="settings-section-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="8" cy="8" r="4.2" />
+                    <path d="M11 11l8.5 8.5" />
+                    <path d="M15.5 15.5l2.2-2.2" />
+                  </svg>
+                </span>
+                <div class="settings-section-heading">
+                  <h2 class="settings-section-title">API Key</h2>
+                  <p class="settings-section-desc">密钥仅保存在本机系统钥匙串</p>
+                </div>
+              </header>
+
+              <Form.Item>
+                <template #label>
+                  <span>API Key</span>
+                  <Tag v-if="draft.hasKey" color="success" class="ml-1.5">已保存</Tag>
+                </template>
+                <Input.Password
+                  v-model:value="apiKey"
+                  :placeholder="draft.hasKey ? '留空保持不变' : 'sk-…'"
+                  autocomplete="off"
+                  @change="resetModels"
+                  @blur="onApiKeyBlur"
+                />
+              </Form.Item>
+
+              <Typography.Text
+                v-if="draft.hasKey && draft.keyMask && !keyPending"
+                type="secondary"
+                class="settings-hint"
+              >
+                已保存：<Typography.Text code>{{ draft.keyMask }}</Typography.Text>（留空保持不变）
+              </Typography.Text>
+
+              <Typography.Text type="secondary" class="settings-hint">
+                填入 API Key 后会自动获取该供应商的模型列表，也可点“获取模型”手动刷新。OpenAI
+                兼容支持 OpenAI、DeepSeek、通义、Kimi、智谱、Ollama 等；Anthropic 与 Gemini 走官方
+                SDK。
+              </Typography.Text>
+
+              <Typography.Text v-if="keyPending" type="secondary" class="settings-hint">
+                API Key 填好后需要点“{{ isExisting ? '保存供应商' : '添加供应商' }}”才会写入钥匙串。
+              </Typography.Text>
+            </section>
+
+            <section v-if="draft.type === 'openai-compatible'" class="settings-section">
+              <header class="settings-section-head">
+                <span class="settings-section-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M4 8h9a3 3 0 1 0-3-3" />
+                    <path d="M20 16h-9a3 3 0 1 0 3 3" />
+                    <circle cx="6" cy="16" r="2" />
+                    <circle cx="18" cy="8" r="2" />
+                  </svg>
+                </span>
+                <div class="settings-section-heading">
+                  <h2 class="settings-section-title">选项</h2>
+                  <p class="settings-section-desc">供应商能力开关</p>
+                </div>
+              </header>
+
+              <div class="settings-switch-row">
+                <Switch v-model:checked="draft.webSearch" />
+                <div class="min-w-0">
+                  <div class="settings-switch-title">允许联网搜索（模型自动调用）</div>
+                  <Typography.Text
+                    v-if="draft.webSearch"
+                    type="secondary"
+                    class="settings-hint"
+                  >
+                    DeepSeek 模型走 DeepSeek 搜索/抓取；其他兼容模型使用 Tavily
+                    keyless（额度较低，被限流时会自动降级为直接回答）。
+                  </Typography.Text>
+                </div>
+              </div>
+            </section>
+
+            <div class="settings-note">
+              点击左侧圆点切换对话使用的供应商；API Key 只保存在本机系统钥匙串，不会随对话发送。
             </div>
-            <Typography.Text
-              v-if="draft.webSearch"
-              type="secondary"
-              class="mt-2 block text-xs leading-relaxed"
-            >
-              DeepSeek 模型走 DeepSeek 搜索/抓取；其他兼容模型使用 Tavily keyless（额度较低，被限流时会自动降级为直接回答）。
-            </Typography.Text>
-          </template>
 
-          <Form.Item>
-            <template #label>
-              <span>API Key</span>
-              <Tag v-if="draft.hasKey" color="success" class="ml-1.5">已保存</Tag>
-            </template>
-            <Input.Password
-              v-model:value="apiKey"
-              :placeholder="draft.hasKey ? '留空保持不变' : 'sk-…'"
-              autocomplete="off"
-              @change="resetModels"
-              @blur="onApiKeyBlur"
+            <Alert
+              v-if="testResult"
+              class="settings-alert"
+              :type="testResult.ok ? 'success' : 'error'"
+              show-icon
+              :message="
+                testResult.ok
+                  ? `${testResult.message} · ${testResult.latencyMs} ms`
+                  : testResult.message
+              "
             />
-          </Form.Item>
 
-          <Typography.Text
-            v-if="draft.hasKey && draft.keyMask && !keyPending"
-            type="secondary"
-            class="block text-xs leading-relaxed"
-          >
-            已保存：<Typography.Text code>{{ draft.keyMask }}</Typography.Text>（留空保持不变）
-          </Typography.Text>
+            <Typography.Text
+              v-if="testResult?.ok && keyPending"
+              type="secondary"
+              class="settings-hint"
+            >
+              连接成功，但新 Key 尚未保存，请点“保存供应商”。
+            </Typography.Text>
 
-          <Typography.Text type="secondary" class="mt-2 block text-xs leading-relaxed">
-            填入 API Key 后会自动获取该供应商的模型列表，也可点“获取模型”手动刷新。OpenAI
-            兼容支持 OpenAI、DeepSeek、通义、Kimi、智谱、Ollama 等；Anthropic 与 Gemini 走官方
-            SDK。点击左侧圆点切换对话使用的供应商。
-          </Typography.Text>
-
-          <div class="mt-4 flex flex-wrap items-center gap-3">
-            <Button
-              type="primary"
-              html-type="submit"
-              :loading="saving"
-              class="settings-primary-button"
-            >
-              {{ isExisting ? '保存供应商' : '添加供应商' }}
-            </Button>
-            <Button
-              :loading="testing"
-              class="settings-secondary-button"
-              @click="testConnection"
-            >
-              测试连接
-            </Button>
-            <Popconfirm
-              v-if="draft.id"
-              title="确定删除这个供应商吗？"
-              ok-text="删除"
-              cancel-text="取消"
-              @confirm="removeProvider(draft.id)"
-            >
-              <Button danger>删除</Button>
-            </Popconfirm>
-            <Tag v-if="saved" color="success">已保存</Tag>
-            <Tag v-else-if="keyPending" color="warning">Key 未保存</Tag>
+            <Alert
+              v-if="errorText"
+              class="settings-alert"
+              type="error"
+              show-icon
+              :message="errorText"
+            />
           </div>
 
-          <Typography.Text
-            v-if="keyPending"
-            type="secondary"
-            class="mt-2 block text-xs leading-relaxed"
-          >
-            API Key 填好后需要点“{{ isExisting ? '保存供应商' : '添加供应商' }}”才会写入钥匙串。
-          </Typography.Text>
-
-          <Alert
-            v-if="testResult"
-            class="settings-alert"
-            :type="testResult.ok ? 'success' : 'error'"
-            show-icon
-            :message="
-              testResult.ok
-                ? `${testResult.message} · ${testResult.latencyMs} ms`
-                : testResult.message
-            "
-          />
-
-          <Typography.Text
-            v-if="testResult?.ok && keyPending"
-            type="secondary"
-            class="mt-2 block text-xs leading-relaxed"
-          >
-            连接成功，但新 Key 尚未保存，请点“保存供应商”。
-          </Typography.Text>
-
-          <Alert v-if="errorText" class="settings-alert" type="error" show-icon :message="errorText" />
+          <div class="settings-actionbar">
+            <div class="settings-actionbar-status">
+              <Popconfirm
+                v-if="draft.id"
+                title="确定删除这个供应商吗？"
+                ok-text="删除"
+                cancel-text="取消"
+                @confirm="removeProvider(draft.id)"
+              >
+                <Button danger type="text" class="settings-delete-button">删除</Button>
+              </Popconfirm>
+              <Tag v-if="saved" color="success">已保存</Tag>
+              <Tag v-else-if="keyPending" color="warning">Key 未保存</Tag>
+            </div>
+            <div class="settings-actionbar-buttons">
+              <Button :loading="testing" class="settings-secondary-button" @click="testConnection">
+                测试连接
+              </Button>
+              <Button
+                type="primary"
+                html-type="submit"
+                :loading="saving"
+                class="settings-primary-button"
+              >
+                {{ isExisting ? '保存供应商' : '添加供应商' }}
+              </Button>
+            </div>
+          </div>
         </Form>
       </div>
     </div>

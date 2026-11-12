@@ -5,17 +5,15 @@ import {
   Actions,
   Bubble,
   Conversations,
-  Prompts,
   Sender,
-  Welcome,
 } from 'ant-design-x-vue'
 import type {
   BubbleItemType,
   ConversationItemType,
-  PromptProps,
   RoleType,
 } from 'ant-design-x-vue'
 import type { MenuProps } from 'ant-design-vue'
+import { Select } from 'ant-design-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { bridge } from '../bridge'
 import { persona } from '../character'
@@ -107,15 +105,6 @@ const bubbleItems = computed<BubbleItemType[]>(() => {
   })
 })
 
-const promptItems: PromptProps[] = suggestions.map((text, index) => ({
-  key: `prompt-${index}`,
-  label: text,
-}))
-
-const welcomeIcon = h(PuckAvatar, {
-  class: 'h-16 w-16 rounded-full shadow-[0_12px_28px_rgba(53,189,152,0.35)]',
-})
-
 const conversationItems = computed(() =>
   conversations.value.map((conversation) => ({
     key: conversation.id,
@@ -125,7 +114,7 @@ const conversationItems = computed(() =>
 )
 
 const creation = {
-  label: '新对话',
+  label: () => h('span', null, '新对话'),
   onClick: () => newConversation(),
 }
 
@@ -199,6 +188,13 @@ function providerLabel(provider: ProviderConfig): string {
   return model ? `${name} · ${model}` : name
 }
 
+const providerOptions = computed(() =>
+  providers.value.map((provider) => ({
+    value: provider.id,
+    label: providerLabel(provider),
+  })),
+)
+
 async function loadProviders() {
   try {
     const settings = await bridge.getSettings()
@@ -232,8 +228,8 @@ function applyConversationProvider(conversationID: string) {
   selectedProviderId.value = activeProviderId.value || providers.value[0]?.id || ''
 }
 
-function onProviderSelect(event: Event) {
-  selectedProviderId.value = (event.target as HTMLSelectElement).value
+function onProviderSelect(value: unknown) {
+  selectedProviderId.value = String(value)
 }
 
 function syncRouteToConversation(id: string) {
@@ -281,8 +277,8 @@ async function removeConversation(id: string) {
   }
 }
 
-function onPromptClick({ data }: { data: PromptProps }) {
-  if (typeof data.label === 'string') input.value = data.label
+function usePrompt(text: string) {
+  input.value = text
 }
 
 function onSenderChange(value: string) {
@@ -431,7 +427,7 @@ onBeforeUnmount(() => {
 
       <div class="flex min-h-0 flex-1">
         <aside
-          class="chat-sidebar flex min-h-0 w-[210px] flex-none flex-col overflow-hidden border-r border-puck-line bg-white/45 p-2.5"
+          class="chat-sidebar flex min-h-0 w-[218px] flex-none flex-col overflow-hidden border-r border-puck-line p-2.5"
         >
           <Conversations
             class="history-conversations min-h-0 flex-1"
@@ -448,20 +444,45 @@ onBeforeUnmount(() => {
           <main class="flex min-h-0 flex-1 flex-col">
             <div
               v-if="messages.length === 0"
-              class="flex flex-1 flex-col items-center justify-center gap-[18px] overflow-y-auto px-6 py-8 text-center [&_.ant-prompts]:w-full [&_.ant-prompts]:max-w-[420px] [&_.ant-prompts]:text-left [&_.ant-welcome]:w-full [&_.ant-welcome]:max-w-[420px]"
+              class="chat-welcome"
             >
-              <Welcome
-                :icon="welcomeIcon"
-                title="和 Puck 聊点什么吧"
-                description="在设置里接入模型后就能真正对话；没有配置时使用本地回声。"
-                variant="borderless"
-              />
-              <Prompts
-                title="试试这些"
-                :items="promptItems"
-                vertical
-                :on-item-click="onPromptClick"
-              />
+              <div class="welcome-hero">
+                <div class="welcome-avatar">
+                  <PuckAvatar class="h-[74px] w-[74px] rounded-full" />
+                </div>
+                <h2 class="welcome-title">和 Puck 聊点什么吧</h2>
+                <p class="welcome-desc">
+                  在设置里接入模型后就能真正对话；没有配置时使用本地回声。
+                </p>
+              </div>
+              <div class="welcome-prompts">
+                <span class="welcome-prompts-title">试试这些</span>
+                <div class="welcome-prompts-grid">
+                  <button
+                    v-for="text in suggestions"
+                    :key="text"
+                    type="button"
+                    class="welcome-prompt"
+                    @click="usePrompt(text)"
+                  >
+                    <span class="welcome-prompt-spark" aria-hidden="true">✦</span>
+                    <span class="welcome-prompt-text">{{ text }}</span>
+                    <svg
+                      class="welcome-prompt-arrow"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M5 12h14" />
+                      <path d="m13 6 6 6-6 6" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
             <Bubble.List
               v-else
@@ -479,9 +500,7 @@ onBeforeUnmount(() => {
             {{ errorText }}
           </p>
 
-          <footer
-            class="composer w-full border-t border-puck-line bg-white/42 px-6 pb-[18px] pt-3.5"
-          >
+          <footer class="composer w-full px-6 pb-4 pt-1">
             <Sender
               :value="input"
               :loading="pending"
@@ -493,21 +512,16 @@ onBeforeUnmount(() => {
             >
               <template #footer>
                 <div class="flex items-center justify-between gap-3">
-                  <select
+                  <Select
                     v-if="providers.length"
-                    class="h-8 max-w-[220px] cursor-pointer rounded-lg bg-puck-mint/12 px-2 text-xs font-semibold text-puck-mint-deep outline-none hover:bg-puck-mint/20"
+                    class="provider-select"
+                    :bordered="false"
                     :value="selectedProviderId"
+                    :options="providerOptions"
+                    :dropdown-match-select-width="false"
                     title="切换当前对话使用的模型"
                     @change="onProviderSelect"
-                  >
-                    <option
-                      v-for="provider in providers"
-                      :key="provider.id"
-                      :value="provider.id"
-                    >
-                      {{ providerLabel(provider) }}
-                    </option>
-                  </select>
+                  />
                   <span v-else class="text-xs text-puck-muted">未配置模型</span>
                   <button
                     type="button"
