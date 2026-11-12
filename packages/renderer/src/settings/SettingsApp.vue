@@ -1,7 +1,26 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, h, onMounted, ref } from 'vue'
 import type { ProviderConfig, ProviderTestResult, Settings, ThemeMode } from '@puck/contract'
+import {
+  Alert,
+  Button,
+  ConfigProvider,
+  Empty,
+  Form,
+  Input,
+  List,
+  Popconfirm,
+  Segmented,
+  Select,
+  Spin,
+  Switch,
+  Tag,
+  Tooltip,
+  Typography,
+} from 'ant-design-vue'
 import { bridge } from '../bridge'
+import { useAntTheme } from '../shared/antdTheme'
+import PuckAvatar from '../shared/PuckAvatar.vue'
 import { useTheme } from '../shared/theme'
 
 interface Draft {
@@ -58,23 +77,32 @@ const DEFAULT_MODELS: Record<string, string> = {
 
 const modelPlaceholder = computed(() => DEFAULT_MODELS[draft.value.type] ?? 'deepseek-chat')
 
-const labelClass = 'flex flex-col gap-[7px] text-[13px] font-semibold text-puck-ink'
-const fieldClass =
-  'rounded-xl border border-puck-line bg-puck-card px-3.5 py-[11px] text-sm text-puck-ink outline-none placeholder:text-puck-muted focus:border-puck-mint/60 focus:ring-[3px] focus:ring-puck-mint/14 dark:bg-puck-surface'
-const primaryClass =
-  'rounded-xl border-none bg-gradient-to-br from-[#5bd8b4] to-[#2fa987] px-6 py-[11px] text-sm font-semibold text-[#10241d] hover:brightness-105 disabled:opacity-60'
-const secondaryClass =
-  'rounded-xl border border-puck-mint/50 bg-transparent px-[18px] py-[11px] text-[13px] font-semibold text-puck-mint-deep hover:bg-puck-mint/10 disabled:opacity-60'
-const dangerClass =
-  'rounded-xl border border-puck-danger/35 bg-transparent px-[18px] py-[11px] text-[13px] text-puck-danger hover:bg-puck-danger-soft'
-const hintClass = 'm-0 text-xs leading-relaxed text-puck-muted'
+const typeOptions = [
+  { value: 'openai-compatible', label: 'OpenAI 兼容' },
+  { value: 'anthropic', label: 'Anthropic' },
+  { value: 'gemini', label: 'Google Gemini' },
+]
 
+const modelOptions = computed(() => {
+  const options = models.value.map((model) => ({ value: model, label: model }))
+  if (draft.value.model && !models.value.includes(draft.value.model)) {
+    options.unshift({ value: draft.value.model, label: `${draft.value.model}（当前）` })
+  }
+  return options
+})
+
+const antTheme = useAntTheme()
+const emptyImage = h(PuckAvatar, { class: 'mx-auto h-12 w-12 rounded-full opacity-70' })
 const { mode: themeMode, setTheme } = useTheme()
 const themeOptions: Array<{ value: ThemeMode; label: string }> = [
   { value: 'system', label: '跟随系统' },
   { value: 'light', label: '浅色' },
   { value: 'dark', label: '深色' },
 ]
+
+function onThemeChange(value: string | number) {
+  void setTheme(String(value) as ThemeMode)
+}
 
 function typeLabel(type: string): string {
   if (type === 'anthropic') return 'Anthropic'
@@ -143,20 +171,18 @@ function onApiKeyBlur() {
   if (apiKey.value.trim()) void fetchModels()
 }
 
-function onModelSelect(event: Event) {
-  draft.value.model = (event.target as HTMLSelectElement).value
-}
-
-function onTypeChange() {
+function onTypeChange(value: unknown) {
+  const type = String(value)
+  draft.value.type = type
   resetModels()
   const knownModels = Object.values(DEFAULT_MODELS)
   if (!draft.value.model.trim() || knownModels.includes(draft.value.model.trim())) {
-    draft.value.model = modelPlaceholder.value
+    draft.value.model = DEFAULT_MODELS[type] ?? 'deepseek-chat'
   }
-  if (draft.value.type !== 'openai-compatible' && draft.value.baseURL === 'https://api.deepseek.com/v1') {
+  if (type !== 'openai-compatible' && draft.value.baseURL === 'https://api.deepseek.com/v1') {
     draft.value.baseURL = ''
   }
-  if (draft.value.type === 'openai-compatible' && !draft.value.baseURL.trim()) {
+  if (type === 'openai-compatible' && !draft.value.baseURL.trim()) {
     draft.value.baseURL = 'https://api.deepseek.com/v1'
   }
 }
@@ -235,7 +261,6 @@ async function save() {
 }
 
 async function removeProvider(id: string) {
-  if (!window.confirm('确定删除这个供应商吗？')) return
   try {
     await bridge.deleteProvider(id)
     await load()
@@ -265,257 +290,262 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex h-full flex-col">
-    <header
-      class="settings-header flex items-start justify-between gap-4 border-b border-puck-line px-6 pb-4 pl-[88px] pt-[18px] [-webkit-app-region:drag]"
-    >
-      <div>
-        <h1 class="m-0 mb-1 text-xl font-bold">设置</h1>
-        <p class="m-0 text-xs text-puck-muted">
-          管理模型供应商；API Key 保存在系统钥匙串，当前对话使用选中的供应商。
-        </p>
-      </div>
-      <div
-        class="flex items-center gap-1 rounded-full border border-puck-line bg-white/60 p-1 text-xs [-webkit-app-region:no-drag] dark:bg-puck-surface-soft"
+  <ConfigProvider :theme="antTheme">
+    <div class="flex h-full flex-col">
+      <header
+        class="settings-header flex items-center justify-between gap-4 border-b border-puck-line px-6 pb-3 pl-[88px] pt-3 [-webkit-app-region:drag]"
       >
-        <button
-          v-for="option in themeOptions"
-          :key="option.value"
-          type="button"
-          class="rounded-full bg-transparent px-2.5 py-1 font-medium transition-colors hover:bg-puck-mint/10"
-          :class="
-            themeMode === option.value
-              ? 'bg-puck-mint/16! text-puck-mint-deep'
-              : 'text-puck-muted hover:text-puck-ink'
-          "
-          @click="setTheme(option.value)"
-        >
-          {{ option.label }}
-        </button>
-      </div>
-    </header>
-
-    <div v-if="!loading" class="flex min-h-0 flex-1">
-      <aside
-        class="settings-rail flex min-h-0 w-[210px] flex-none flex-col border-r border-puck-line bg-white/45"
-      >
-        <div
-          class="flex items-center justify-between px-3 pb-2 pt-3.5 text-xs font-semibold text-puck-muted"
-        >
-          <span>供应商</span>
-          <button
-            class="rounded-lg border-none bg-transparent px-2 py-1 text-xs font-semibold text-puck-mint-deep hover:bg-puck-mint/14"
-            @click="addProvider"
-          >
-            ＋ 添加
-          </button>
+        <div class="min-w-0">
+          <Typography.Title :level="4" class="settings-title">设置</Typography.Title>
+          <Typography.Text type="secondary" class="settings-subtitle">
+            管理模型供应商；API Key 保存在系统钥匙串，当前对话使用选中的供应商。
+          </Typography.Text>
         </div>
-        <div class="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 pb-3">
-          <button
-            v-for="provider in providers"
-            :key="provider.id"
-            class="flex w-full items-center gap-2 rounded-[10px] border-none bg-transparent px-2.5 py-[9px] text-left text-[13px] text-puck-ink hover:bg-puck-ink/5 dark:hover:bg-puck-surface"
-            :class="{ 'bg-puck-mint/16!': provider.id === draft.id }"
-            @click="edit(provider)"
-          >
-            <span
-              class="h-2.5 w-2.5 flex-none rounded-full border-[1.5px] border-puck-muted"
-              :class="{
-                'border-puck-mint bg-puck-mint shadow-[0_0_0_2px_rgba(63,201,165,0.2)]':
-                  provider.id === settings.activeProviderId,
-              }"
-              :title="provider.id === settings.activeProviderId ? '当前使用中' : '设为当前供应商'"
-              @click.stop="activate(provider.id)"
-            ></span>
-            <span class="flex-1 truncate">{{ provider.name }}</span>
-            <span class="text-[11px] text-puck-muted">{{ typeLabel(provider.type) }}</span>
-          </button>
-          <p v-if="providers.length === 0" class="mx-2.5 my-2 text-xs text-puck-muted">
-            还没有供应商
-          </p>
+        <div class="flex-none [-webkit-app-region:no-drag]">
+          <Segmented
+            class="settings-theme-segmented"
+            :options="themeOptions"
+            :value="themeMode"
+            @change="onThemeChange"
+          />
         </div>
-      </aside>
+      </header>
 
-      <form
-        class="flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto px-7 pb-7 pt-5"
-        @submit.prevent="save"
-      >
-        <label :class="labelClass">
-          <span>名称</span>
-          <input
-            v-model="draft.name"
-            :class="fieldClass"
-            placeholder="例如 DeepSeek"
-            autocomplete="off"
-          />
-        </label>
+      <div v-if="loading" class="grid min-h-0 flex-1 place-items-center">
+        <Spin size="large" />
+      </div>
 
-        <label :class="labelClass">
-          <span>类型</span>
-          <select v-model="draft.type" :class="fieldClass" @change="onTypeChange">
-            <option value="openai-compatible">OpenAI 兼容</option>
-            <option value="anthropic">Anthropic</option>
-            <option value="gemini">Google Gemini</option>
-          </select>
-        </label>
-
-        <label v-if="draft.type === 'openai-compatible'" :class="labelClass">
-          <span>服务地址</span>
-          <input
-            v-model="draft.baseURL"
-            :class="fieldClass"
-            placeholder="https://api.deepseek.com/v1"
-            autocomplete="off"
-            @input="resetModels"
-          />
-        </label>
-
-        <label v-else :class="labelClass">
-          <span>自定义地址（可选）</span>
-          <input
-            v-model="draft.baseURL"
-            :class="fieldClass"
-            :placeholder="
-              draft.type === 'gemini' ? '留空使用 Gemini 官方 API' : '留空使用 Anthropic 官方 API'
-            "
-            autocomplete="off"
-            @input="resetModels"
-          />
-        </label>
-
-        <label :class="labelClass">
-          <span>模型</span>
-          <div class="flex gap-2.5">
-            <input
-              v-model="draft.model"
-              class="min-w-0 flex-1"
-              :class="fieldClass"
-              :placeholder="modelPlaceholder"
-              autocomplete="off"
-            />
-            <button
-              type="button"
-              class="flex-none whitespace-nowrap"
-              :class="secondaryClass"
-              :disabled="modelsLoading"
-              @click="fetchModels"
-            >
-              {{ modelsLoading ? '获取中…' : '获取模型' }}
-            </button>
+      <div v-else class="flex min-h-0 flex-1">
+        <aside
+          class="settings-rail flex min-h-0 w-[210px] flex-none flex-col border-r border-puck-line bg-white/45"
+        >
+          <div class="flex items-center justify-between px-3 pb-2 pt-3.5">
+            <Typography.Text type="secondary" class="text-xs font-semibold">
+              供应商
+            </Typography.Text>
+            <Button type="link" size="small" class="settings-add-button" @click="addProvider">
+              ＋ 添加
+            </Button>
           </div>
-        </label>
-
-        <label v-if="models.length > 0" :class="labelClass">
-          <span>
-            可选模型
-            <em
-              class="ml-1.5 rounded-full bg-puck-mint/14 px-[7px] py-0.5 text-[11px] font-medium not-italic text-puck-mint-deep"
-              >{{ models.length }} 个</em
-            >
-          </span>
-          <select :class="fieldClass" :value="draft.model" @change="onModelSelect">
-            <option value="" disabled>从列表选择</option>
-            <option v-if="draft.model && !models.includes(draft.model)" :value="draft.model">
-              {{ draft.model }}（当前）
-            </option>
-            <option v-for="model in models" :key="model" :value="model">{{ model }}</option>
-          </select>
-        </label>
-        <p v-else-if="modelsError" :class="hintClass">{{ modelsError }}</p>
-
-        <label
-          v-if="draft.type === 'openai-compatible'"
-          class="flex flex-row items-center gap-2 text-[13px] font-medium text-puck-ink"
-        >
-          <input
-            v-model="draft.webSearch"
-            type="checkbox"
-            class="m-0 h-4 w-4 p-0 accent-puck-mint"
+          <List
+            v-if="providers.length > 0"
+            :data-source="providers"
+            :split="false"
+            :bordered="false"
+            row-key="id"
+            class="provider-list min-h-0 flex-1 overflow-y-auto px-2 pb-3"
+          >
+            <template #renderItem="{ item }">
+              <List.Item class="provider-list-item">
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2 rounded-[10px] border-none bg-transparent px-2.5 py-[9px] text-left text-[13px] text-puck-ink transition-colors hover:bg-puck-ink/5 dark:hover:bg-puck-surface"
+                  :class="{ 'bg-puck-mint/16!': item.id === draft.id }"
+                  @click="edit(item)"
+                >
+                  <Tooltip
+                    :title="
+                      item.id === settings.activeProviderId ? '当前使用中' : '设为当前供应商'
+                    "
+                  >
+                    <span
+                      class="h-2.5 w-2.5 flex-none rounded-full border-[1.5px] border-puck-muted"
+                      :class="{
+                        'border-puck-mint bg-puck-mint shadow-[0_0_0_2px_rgba(63,201,165,0.2)]':
+                          item.id === settings.activeProviderId,
+                      }"
+                      @click.stop="activate(item.id)"
+                    ></span>
+                  </Tooltip>
+                  <span class="flex-1 truncate">{{ item.name }}</span>
+                  <span class="text-[11px] text-puck-muted">{{ typeLabel(item.type) }}</span>
+                </button>
+              </List.Item>
+            </template>
+          </List>
+          <Empty
+            v-else
+            :image="emptyImage"
+            class="my-6"
+            description="还没有供应商"
           />
-          <span>允许联网搜索（模型自动调用）</span>
-        </label>
-        <p v-if="draft.type === 'openai-compatible' && draft.webSearch" :class="hintClass">
-          DeepSeek 模型走 DeepSeek 搜索/抓取；其他兼容模型使用 Tavily keyless（额度较低，被限流时会自动降级为直接回答）。
-        </p>
+        </aside>
 
-        <label :class="labelClass">
-          <span>
-            API Key
-            <em
-              v-if="draft.hasKey"
-              class="ml-1.5 rounded-full bg-puck-mint/14 px-[7px] py-0.5 text-[11px] font-medium not-italic text-puck-mint-deep"
-              >已保存</em
+        <Form
+          :model="draft"
+          layout="vertical"
+          class="settings-form min-w-0 flex-1 overflow-y-auto px-7 pb-7 pt-5"
+          @finish="save"
+        >
+          <Form.Item label="名称">
+            <Input v-model:value="draft.name" placeholder="例如 DeepSeek" autocomplete="off" />
+          </Form.Item>
+
+          <Form.Item label="类型">
+            <Select
+              v-model:value="draft.type"
+              :options="typeOptions"
+              @change="onTypeChange"
+            />
+          </Form.Item>
+
+          <Form.Item v-if="draft.type === 'openai-compatible'" label="服务地址" required>
+            <Input
+              v-model:value="draft.baseURL"
+              placeholder="https://api.deepseek.com/v1"
+              autocomplete="off"
+              @change="resetModels"
+            />
+          </Form.Item>
+
+          <Form.Item v-else label="自定义地址（可选）">
+            <Input
+              v-model:value="draft.baseURL"
+              :placeholder="
+                draft.type === 'gemini'
+                  ? '留空使用 Gemini 官方 API'
+                  : '留空使用 Anthropic 官方 API'
+              "
+              autocomplete="off"
+              @change="resetModels"
+            />
+          </Form.Item>
+
+          <div class="flex items-start gap-2.5">
+            <Form.Item label="模型" required class="min-w-0 flex-1">
+              <Input
+                v-model:value="draft.model"
+                :placeholder="modelPlaceholder"
+                autocomplete="off"
+              />
+            </Form.Item>
+            <Form.Item label=" " class="flex-none">
+              <Button :loading="modelsLoading" @click="fetchModels">获取模型</Button>
+            </Form.Item>
+          </div>
+
+          <Form.Item v-if="models.length > 0">
+            <template #label>
+              <span>可选模型</span>
+              <Tag color="success" class="ml-1.5">{{ models.length }} 个</Tag>
+            </template>
+            <Select
+              v-model:value="draft.model"
+              :options="modelOptions"
+              show-search
+              placeholder="从列表选择"
+            />
+          </Form.Item>
+          <Typography.Text
+            v-else-if="modelsError"
+            type="warning"
+            class="block text-xs leading-relaxed"
+          >
+            {{ modelsError }}
+          </Typography.Text>
+
+          <template v-if="draft.type === 'openai-compatible'">
+            <div class="flex items-center gap-2.5 text-[13px] text-puck-ink">
+              <Switch v-model:checked="draft.webSearch" />
+              <span>允许联网搜索（模型自动调用）</span>
+            </div>
+            <Typography.Text
+              v-if="draft.webSearch"
+              type="secondary"
+              class="mt-2 block text-xs leading-relaxed"
             >
-          </span>
-          <input
-            v-model="apiKey"
-            type="password"
-            :class="fieldClass"
-            :placeholder="draft.hasKey ? '留空保持不变' : 'sk-…'"
-            autocomplete="off"
-            @input="resetModels"
-            @blur="onApiKeyBlur"
+              DeepSeek 模型走 DeepSeek 搜索/抓取；其他兼容模型使用 Tavily keyless（额度较低，被限流时会自动降级为直接回答）。
+            </Typography.Text>
+          </template>
+
+          <Form.Item>
+            <template #label>
+              <span>API Key</span>
+              <Tag v-if="draft.hasKey" color="success" class="ml-1.5">已保存</Tag>
+            </template>
+            <Input.Password
+              v-model:value="apiKey"
+              :placeholder="draft.hasKey ? '留空保持不变' : 'sk-…'"
+              autocomplete="off"
+              @change="resetModels"
+              @blur="onApiKeyBlur"
+            />
+          </Form.Item>
+
+          <Typography.Text
+            v-if="draft.hasKey && draft.keyMask && !keyPending"
+            type="secondary"
+            class="block text-xs leading-relaxed"
+          >
+            已保存：<Typography.Text code>{{ draft.keyMask }}</Typography.Text>（留空保持不变）
+          </Typography.Text>
+
+          <Typography.Text type="secondary" class="mt-2 block text-xs leading-relaxed">
+            填入 API Key 后会自动获取该供应商的模型列表，也可点“获取模型”手动刷新。OpenAI
+            兼容支持 OpenAI、DeepSeek、通义、Kimi、智谱、Ollama 等；Anthropic 与 Gemini 走官方
+            SDK。点击左侧圆点切换对话使用的供应商。
+          </Typography.Text>
+
+          <div class="mt-4 flex flex-wrap items-center gap-3">
+            <Button
+              type="primary"
+              html-type="submit"
+              :loading="saving"
+              class="settings-primary-button"
+            >
+              {{ isExisting ? '保存供应商' : '添加供应商' }}
+            </Button>
+            <Button
+              :loading="testing"
+              class="settings-secondary-button"
+              @click="testConnection"
+            >
+              测试连接
+            </Button>
+            <Popconfirm
+              v-if="draft.id"
+              title="确定删除这个供应商吗？"
+              ok-text="删除"
+              cancel-text="取消"
+              @confirm="removeProvider(draft.id)"
+            >
+              <Button danger>删除</Button>
+            </Popconfirm>
+            <Tag v-if="saved" color="success">已保存</Tag>
+            <Tag v-else-if="keyPending" color="warning">Key 未保存</Tag>
+          </div>
+
+          <Typography.Text
+            v-if="keyPending"
+            type="secondary"
+            class="mt-2 block text-xs leading-relaxed"
+          >
+            API Key 填好后需要点“{{ isExisting ? '保存供应商' : '添加供应商' }}”才会写入钥匙串。
+          </Typography.Text>
+
+          <Alert
+            v-if="testResult"
+            class="settings-alert"
+            :type="testResult.ok ? 'success' : 'error'"
+            show-icon
+            :message="
+              testResult.ok
+                ? `${testResult.message} · ${testResult.latencyMs} ms`
+                : testResult.message
+            "
           />
-        </label>
 
-        <p v-if="draft.hasKey && draft.keyMask && !keyPending" class="-mt-1.5 text-xs text-puck-muted">
-          已保存：<code
-            class="rounded-md bg-puck-ink/6 px-[7px] py-0.5 font-mono text-xs text-puck-ink"
-            >{{ draft.keyMask }}</code
-          >（留空保持不变）
-        </p>
+          <Typography.Text
+            v-if="testResult?.ok && keyPending"
+            type="secondary"
+            class="mt-2 block text-xs leading-relaxed"
+          >
+            连接成功，但新 Key 尚未保存，请点“保存供应商”。
+          </Typography.Text>
 
-        <p :class="hintClass">
-          填入 API Key 后会自动获取该供应商的模型列表，也可点“获取模型”手动刷新。OpenAI
-          兼容支持 OpenAI、DeepSeek、通义、Kimi、智谱、Ollama 等；Anthropic 与 Gemini 走官方
-          SDK。点击左侧圆点切换对话使用的供应商。
-        </p>
-
-        <div class="flex items-center gap-3">
-          <button type="submit" :class="primaryClass" :disabled="saving">
-            {{ saving ? '保存中…' : isExisting ? '保存供应商' : '添加供应商' }}
-          </button>
-          <button type="button" :class="secondaryClass" :disabled="testing" @click="testConnection">
-            {{ testing ? '测试中…' : '测试连接' }}
-          </button>
-          <button v-if="draft.id" type="button" :class="dangerClass" @click="removeProvider(draft.id)">
-            删除
-          </button>
-          <span v-if="saved" class="text-[13px] text-puck-mint-deep">已保存</span>
-          <span v-else-if="keyPending" class="text-[13px] font-semibold text-puck-warning">Key 未保存</span>
-        </div>
-
-        <p v-if="keyPending" :class="hintClass">
-          API Key 填好后需要点“{{ isExisting ? '保存供应商' : '添加供应商' }}”才会写入钥匙串。
-        </p>
-
-        <p
-          v-if="testResult"
-          class="m-0 rounded-[10px] px-3.5 py-2.5 text-xs break-words"
-          :class="
-            testResult.ok
-              ? 'bg-puck-mint/14 text-puck-mint-deep'
-              : 'bg-puck-danger-soft text-puck-danger'
-          "
-        >
-          {{
-            testResult.ok
-              ? `${testResult.message} · ${testResult.latencyMs} ms`
-              : testResult.message
-          }}
-        </p>
-
-        <p v-if="testResult?.ok && keyPending" :class="hintClass">
-          连接成功，但新 Key 尚未保存，请点“保存供应商”。
-        </p>
-
-        <p
-          v-if="errorText"
-          class="m-0 rounded-[10px] bg-puck-danger-soft px-3.5 py-2.5 text-xs text-puck-danger"
-        >
-          {{ errorText }}
-        </p>
-      </form>
+          <Alert v-if="errorText" class="settings-alert" type="error" show-icon :message="errorText" />
+        </Form>
+      </div>
     </div>
-  </div>
+  </ConfigProvider>
 </template>

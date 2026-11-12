@@ -17,11 +17,10 @@ import type {
   RoleType,
 } from 'ant-design-x-vue'
 import type { MenuProps } from 'ant-design-vue'
-import { theme as antdTheme } from 'ant-design-vue'
 import { bridge } from '../bridge'
 import { persona } from '../character'
 import PuckAvatar from '../shared/PuckAvatar.vue'
-import { useTheme } from '../shared/theme'
+import { useAntTheme } from '../shared/antdTheme'
 
 interface Message {
   id: string
@@ -43,7 +42,7 @@ const unsubscribers: Array<() => void> = []
 
 const suggestions = ['帮我想个周末计划', '给我讲个冷笑话', '解释一下什么是 RAG']
 
-const { isDark } = useTheme()
+const antTheme = useAntTheme()
 
 let pendingMessageId = ''
 let viewEpoch = 0
@@ -54,33 +53,6 @@ const streamingMessageId = computed(() => {
   const last = messages.value[messages.value.length - 1]
   return last && last.role === 'assistant' ? last.id : ''
 })
-
-const themeConfig = computed(() => ({
-  algorithm: isDark.value ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-  token: {
-    colorPrimary: isDark.value ? '#5fd8b4' : '#35bd98',
-    colorText: isDark.value ? '#f7f2e9' : '#17342d',
-    colorTextSecondary: isDark.value ? '#b9ab9b' : '#6b7f79',
-    colorTextDescription: isDark.value ? '#b9ab9b' : '#6b7f79',
-    colorTextPlaceholder: isDark.value ? '#b9ab9b' : '#6b7f79',
-    colorBgLayout: isDark.value ? '#1a1511' : '#fbf7ef',
-    colorBgContainer: isDark.value ? '#2d261f' : '#ffffff',
-    colorBgElevated: isDark.value ? '#362e25' : '#ffffff',
-    colorBorder: isDark.value ? 'rgba(247, 242, 233, 0.12)' : 'rgba(23, 52, 45, 0.12)',
-    colorBorderSecondary: isDark.value
-      ? 'rgba(247, 242, 233, 0.08)'
-      : 'rgba(23, 52, 45, 0.08)',
-    colorFillSecondary: isDark.value
-      ? 'rgba(247, 242, 233, 0.06)'
-      : 'rgba(23, 52, 45, 0.06)',
-    colorFillTertiary: isDark.value
-      ? 'rgba(247, 242, 233, 0.04)'
-      : 'rgba(23, 52, 45, 0.04)',
-    borderRadius: 12,
-    fontFamily:
-      "'SF Pro Rounded', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif",
-  },
-}))
 
 function openSettings() {
   void bridge.openSettings()
@@ -396,7 +368,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <XProvider :theme="themeConfig">
+  <XProvider :theme="antTheme">
     <div class="flex h-full w-full flex-col">
       <header
         class="chat-header flex items-center justify-between gap-4 border-b border-puck-line px-6 pb-2 pl-[88px] pt-2 [-webkit-app-region:drag]"
