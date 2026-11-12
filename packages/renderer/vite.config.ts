@@ -19,6 +19,9 @@ export default defineConfig({
     },
   },
   server: {
+    // Wails 开发模式的应用内资源代理强制用 IPv4 连接 localhost，
+    // 而默认的 localhost 绑定在本机会只监听 [::1]，导致所有页面请求 502。
+    host: '127.0.0.1',
     port: 34115,
     strictPort: true,
     fs: {
