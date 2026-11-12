@@ -3,26 +3,26 @@
 #
 # The lines below are called `modelines`. See `:help modeline`
 
-name: "probe"
+name: "puck"
 arch: ${GOARCH}
 platform: "linux"
 version: "0.1.0"
 section: "default"
 priority: "extra"
-maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>
-description: "A probe application"
-vendor: "My Company"
-homepage: "https://wails.io"
-license: "MIT"
+maintainer: "lxqddd <56574505+lxqddd@users.noreply.github.com>"
+description: "住在你桌角的 AI 小伙伴"
+vendor: "Puck"
+homepage: "https://github.com/lxqddd/puck"
+license: "Proprietary"
 release: "1"
 
 contents:
-  - src: "./bin/probe"
-    dst: "/usr/local/bin/probe"
+  - src: "./bin/puck"
+    dst: "/usr/local/bin/puck"
   - src: "./build/appicon.png"
-    dst: "/usr/share/icons/hicolor/128x128/apps/probe.png"
-  - src: "./build/linux/probe.desktop"
-    dst: "/usr/share/applications/probe.desktop"
+    dst: "/usr/share/icons/hicolor/1024x1024/apps/puck.png"
+  - src: "./build/linux/puck.desktop"
+    dst: "/usr/share/applications/puck.desktop"
 
 # Default dependencies for the GTK4 + WebKitGTK 6.0 stack (Ubuntu 24.04+ / Debian 13+)
 depends:

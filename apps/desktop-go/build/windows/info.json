@@ -7,11 +7,11 @@
 		"0409": {
 			"FileVersion": "0.1.0",
 			"ProductVersion": "0.1.0",
-			"CompanyName": "My Company",
-			"FileDescription": "A probe application",
-			"LegalCopyright": "© 2026, My Company",
-			"ProductName": "My Product",
-			"Comments": "This is a comment"
+			"CompanyName": "Puck",
+			"FileDescription": "住在你桌角的 AI 小伙伴",
+			"LegalCopyright": "(c) 2026, Puck",
+			"ProductName": "Puck",
+			"Comments": "Puck desktop pet"
 		}
 	}
 }
