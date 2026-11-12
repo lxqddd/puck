@@ -4,6 +4,9 @@ packages:
   - '!apps/**/dist'
   - '!packages/**/dist'
 
+allowBuilds:
+  core-js: false
+
 minimumReleaseAgeExclude:
   - '@turbo/darwin-64@2.11.11'
   - '@turbo/darwin-arm64@2.11.11'
