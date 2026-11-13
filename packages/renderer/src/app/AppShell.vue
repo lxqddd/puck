@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { XProvider } from 'ant-design-x-vue'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { bridge } from '../bridge'
-import { useAntTheme } from '../shared/antdTheme'
 import AppNav from './AppNav.vue'
 
 const route = useRoute()
 const router = useRouter()
-const antTheme = useAntTheme()
 let unsubscribe: (() => void) | undefined
 
 const shellClass = computed(() => {
@@ -28,7 +26,7 @@ onBeforeUnmount(() => unsubscribe?.())
 </script>
 
 <template>
-  <XProvider :theme="antTheme">
+  <TooltipProvider>
     <div class="app-shell flex h-full w-full" :class="shellClass">
       <AppNav />
       <div class="min-w-0 flex-1">
@@ -39,5 +37,5 @@ onBeforeUnmount(() => unsubscribe?.())
         </RouterView>
       </div>
     </div>
-  </XProvider>
+  </TooltipProvider>
 </template>

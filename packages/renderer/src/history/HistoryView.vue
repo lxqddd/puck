@@ -1,17 +1,22 @@
 <script setup lang="ts">
-import { computed, h, onActivated, onMounted, ref } from 'vue'
+import { computed, onActivated, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  Alert,
-  Button,
-  Empty,
-  Input,
-  List,
-  Popconfirm,
-  Spin,
-  Typography,
-} from 'ant-design-vue'
 import type { Conversation } from '@puck/contract'
+import { CircleAlertIcon, Loader2Icon, SearchIcon, Trash2Icon, XIcon } from '@lucide/vue'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { bridge } from '../bridge'
 import PuckAvatar from '../shared/PuckAvatar.vue'
 
@@ -20,7 +25,8 @@ const conversations = ref<Conversation[]>([])
 const loading = ref(true)
 const errorText = ref('')
 const query = ref('')
-const emptyImage = h(PuckAvatar, { class: 'mx-auto h-14 w-14 rounded-full opacity-70' })
+const deleteDialogOpen = ref(false)
+const deleteTarget = ref<Conversation | null>(null)
 let activatedOnce = false
 
 async function load() {
@@ -77,6 +83,15 @@ function openConversation(id: string) {
   void router.push({ name: 'chat', params: { id } })
 }
 
+function goChat() {
+  void router.push({ name: 'chat' })
+}
+
+function requestDelete(conversation: Conversation) {
+  deleteTarget.value = conversation
+  deleteDialogOpen.value = true
+}
+
 async function removeConversation(id: string) {
   try {
     await bridge.deleteConversation(id)
@@ -84,6 +99,13 @@ async function removeConversation(id: string) {
   } catch (error) {
     errorText.value = error instanceof Error ? error.message : String(error)
   }
+}
+
+async function confirmDelete() {
+  const target = deleteTarget.value
+  deleteDialogOpen.value = false
+  deleteTarget.value = null
+  if (target) await removeConversation(target.id)
 }
 
 onMounted(load)
@@ -99,75 +121,119 @@ onActivated(() => {
 <template>
   <div class="flex h-full w-full flex-col">
     <header
-      class="history-header flex items-center justify-between gap-4 border-b border-puck-line px-6 pb-3 pt-3 [-webkit-app-region:drag]"
+      class="history-header flex items-center justify-between gap-4 border-b border-border bg-card px-5 py-2.5 [-webkit-app-region:drag]"
     >
       <div class="min-w-0">
-        <Typography.Title :level="4" class="history-title">历史</Typography.Title>
-        <Typography.Text type="secondary" class="history-subtitle">
-          所有对话都在这里
-        </Typography.Text>
+        <h1 class="history-title">历史</h1>
+        <p class="history-subtitle">所有对话都在这里</p>
       </div>
-      <div class="w-[260px] flex-none [-webkit-app-region:no-drag]">
-        <Input v-model:value="query" allow-clear placeholder="搜索对话" />
+      <div class="history-search w-[260px] flex-none [-webkit-app-region:no-drag]">
+        <SearchIcon class="history-search-icon" />
+        <Input
+          v-model="query"
+          type="search"
+          placeholder="搜索对话"
+          autocomplete="off"
+          aria-label="搜索对话"
+          class="pl-9 pr-9"
+        />
+        <Button
+          v-if="query"
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          class="history-search-clear"
+          aria-label="清空搜索"
+          @click="query = ''"
+        >
+          <XIcon class="size-3.5" />
+        </Button>
       </div>
     </header>
 
-    <div class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-      <div v-if="loading" class="grid h-full place-items-center">
-        <Spin size="large" />
-      </div>
-      <Alert
-        v-else-if="errorText"
-        class="mx-auto max-w-[760px]"
-        type="error"
-        show-icon
-        :message="errorText"
-      />
-      <Empty
-        v-else-if="groups.length === 0"
-        class="mt-10"
-        :image="emptyImage"
-        :description="query ? '没有找到匹配的对话' : '还没有历史对话'"
-      />
-      <div v-else class="mx-auto flex max-w-[760px] flex-col gap-6">
-        <section v-for="group in groups" :key="group.label">
-          <Typography.Text type="secondary" class="mb-2 block text-xs font-semibold">
-            {{ group.label }}
-          </Typography.Text>
-          <List
-            :data-source="group.items"
-            :split="false"
-            :bordered="false"
-            row-key="id"
-            class="history-list"
+    <ScrollArea class="min-h-0 flex-1">
+      <div class="history-scroll-content">
+        <div v-if="loading" class="grid h-48 place-items-center">
+          <Loader2Icon class="size-5 animate-spin text-muted-foreground" />
+        </div>
+
+        <div v-else-if="errorText" class="history-state">
+          <Alert variant="destructive">
+            <CircleAlertIcon class="size-4" />
+            <AlertTitle>加载失败</AlertTitle>
+            <AlertDescription>{{ errorText }}</AlertDescription>
+          </Alert>
+          <Button type="button" variant="outline" size="sm" @click="load">重试</Button>
+        </div>
+
+        <div v-else-if="groups.length === 0" class="history-empty">
+          <PuckAvatar class="size-14 rounded-full opacity-80" />
+          <p class="history-empty-title">
+            {{ query ? '没有找到匹配的对话' : '还没有历史对话' }}
+          </p>
+          <p class="history-empty-desc">
+            {{ query ? '换个关键词试试。' : '和 Puck 聊过之后，对话会出现在这里。' }}
+          </p>
+          <Button
+            v-if="!query"
+            type="button"
+            variant="outline"
+            size="sm"
+            class="mt-2"
+            @click="goChat"
           >
-            <template #renderItem="{ item }">
-              <List.Item class="history-item">
+            去聊天
+          </Button>
+        </div>
+
+        <div v-else class="history-groups">
+          <section v-for="group in groups" :key="group.label" class="history-group">
+            <p class="history-group-title">{{ group.label }}</p>
+            <div class="history-list">
+              <div v-for="conversation in group.items" :key="conversation.id" class="history-item">
                 <button
                   type="button"
                   class="history-open"
-                  @click="openConversation(item.id)"
+                  @click="openConversation(conversation.id)"
                 >
-                  <span class="block truncate text-sm font-medium text-puck-ink">
-                    {{ item.title || '新对话' }}
-                  </span>
-                  <span class="mt-1 block text-xs text-puck-muted">
-                    {{ timeLabel(item.updatedAt) }}
-                  </span>
+                  <span class="history-name">{{ conversation.title || '新对话' }}</span>
+                  <span class="history-time">{{ timeLabel(conversation.updatedAt) }}</span>
                 </button>
-                <Popconfirm
-                  title="删除这个对话？"
-                  ok-text="删除"
-                  cancel-text="取消"
-                  @confirm="removeConversation(item.id)"
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  class="history-delete"
+                  aria-label="删除对话"
+                  @click.stop="requestDelete(conversation)"
                 >
-                  <Button danger type="text" size="small" @click.stop>删除</Button>
-                </Popconfirm>
-              </List.Item>
-            </template>
-          </List>
-        </section>
+                  <Trash2Icon class="size-3.5" />
+                </Button>
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
-    </div>
+    </ScrollArea>
+
+    <AlertDialog v-model:open="deleteDialogOpen">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>删除这个对话？</AlertDialogTitle>
+          <AlertDialogDescription>
+            “{{ deleteTarget?.title || '新对话' }}”将永久删除，无法恢复。
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogAction
+            class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            @click="confirmDelete"
+          >
+            删除
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>

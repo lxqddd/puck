@@ -6,6 +6,11 @@ import wails from '@wailsio/runtime/plugins/vite'
 
 export default defineConfig({
   plugins: [vue(), wails('./src/bindings'), tailwindcss()],
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
   build: {
     outDir: fileURLToPath(new URL('../../apps/desktop-go/frontend/dist', import.meta.url)),
     emptyOutDir: true,

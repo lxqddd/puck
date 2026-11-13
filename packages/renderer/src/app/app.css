@@ -1,0 +1,13 @@
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tw-animate-css';
+
+*,
+::before,
+::after {
+  border-color: var(--border);
+}
+
+body.app-body {
+  background: var(--background);
+  color: var(--foreground);
+}

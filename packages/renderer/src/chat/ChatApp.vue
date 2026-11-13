@@ -1,42 +1,74 @@
 <script setup lang="ts">
-import { computed, h, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import type { Conversation, ProviderConfig, StoredMessage } from '@puck/contract'
-import {
-  Actions,
-  Bubble,
-  Conversations,
-  Sender,
-  Think,
-} from 'ant-design-x-vue'
+import { computed, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type {
-  BubbleItemType,
-  ConversationItemType,
-  RoleType,
-} from 'ant-design-x-vue'
-import type { MenuProps } from 'ant-design-vue'
-import { Select } from 'ant-design-vue'
+  Conversation as ConversationRecord,
+  ProviderConfig,
+  StoredMessage,
+} from '@puck/contract'
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation'
+import {
+  Message,
+  MessageAction,
+  MessageActions,
+  MessageContent,
+  MessageResponse,
+} from '@/components/ai-elements/message'
+import { Shimmer } from '@/components/ai-elements/shimmer'
+import { Suggestion } from '@/components/ai-elements/suggestion'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  CopyIcon,
+  MoreHorizontalIcon,
+  PlusIcon,
+  Trash2Icon,
+} from '@lucide/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { bridge } from '../bridge'
 import { persona } from '../character'
 import PuckAvatar from '../shared/PuckAvatar.vue'
+import ChatComposer from './ChatComposer.vue'
+import ChatReasoning from './ChatReasoning.vue'
 
-interface Message {
+interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
   text: string
   reasoning: string
 }
 
-const conversations = ref<Conversation[]>([])
+const conversations = ref<ConversationRecord[]>([])
 const activeConversationId = ref('')
-const messages = ref<Message[]>([])
-const input = ref('')
+const messages = ref<ChatMessage[]>([])
 const pending = ref(false)
 const errorText = ref('')
 const toast = ref('')
 const providers = ref<ProviderConfig[]>([])
 const activeProviderId = ref('')
 const selectedProviderId = ref('')
+const deleteDialogOpen = ref(false)
+const deleteTarget = ref<ConversationRecord | null>(null)
+const composerRef = ref<InstanceType<typeof ChatComposer> | null>(null)
 const unsubscribers: Array<() => void> = []
 
 const suggestions = ['帮我想个周末计划', '给我讲个冷笑话', '解释一下什么是 RAG']
@@ -55,115 +87,29 @@ const streamingMessageId = computed(() => {
   return last && last.role === 'assistant' ? last.id : ''
 })
 
-const thinkOpen = ref<Record<string, boolean>>({})
-
-/** 思考阶段自动展开；开始输出正文后自动收起，用户手动展开的状态单独记忆 */
-function thinkingExpanded(message: Message): boolean {
-  if (pending.value && message.id === streamingMessageId.value && !message.text) {
-    return true
-  }
-  return thinkOpen.value[message.id] ?? false
-}
-
-function setThinkingExpanded(message: Message, expanded: boolean) {
-  thinkOpen.value = { ...thinkOpen.value, [message.id]: expanded }
-}
-
-const puckAvatar = h(PuckAvatar, { class: 'h-[30px] w-[30px] rounded-full' })
-
-const roles: RoleType = {
-  ai: {
-    placement: 'start',
-    variant: 'filled',
-    shape: 'corner',
-    avatar: puckAvatar,
-  },
-  user: {
-    placement: 'end',
-    variant: 'filled',
-    shape: 'corner',
-  },
-}
-
-const bubbleItems = computed<BubbleItemType[]>(() => {
-  const streamingId = streamingMessageId.value
-  return messages.value.map((message) => {
-    const isStreaming = pending.value && message.id === streamingId
-    const hasReasoning = message.role === 'assistant' && message.reasoning.length > 0
-    const thinking = isStreaming && !message.text
-    return {
-      key: message.id,
-      role: message.role === 'assistant' ? 'ai' : 'user',
-      content: hasReasoning
-        ? h('div', { class: 'bubble-rich' }, [
-            h(
-              Think,
-              {
-                title: thinking ? '思考中…' : '思考过程',
-                loading: thinking,
-                blink: thinking,
-                expanded: thinkingExpanded(message),
-                onExpand: (expanded: boolean) => setThinkingExpanded(message, expanded),
-              },
-              () => message.reasoning,
-            ),
-            message.text
-              ? h('div', { class: 'bubble-rich-text' }, message.text)
-              : null,
-          ])
-        : message.text,
-      streaming: isStreaming,
-      loading: thinking && !hasReasoning,
-      footer:
-        message.role === 'assistant' && message.text
-          ? h(Actions, {
-              items: [
-                {
-                  key: 'copy',
-                  label: '复制',
-                  actionRender: () =>
-                    h(
-                      'button',
-                      {
-                        class:
-                          'rounded-md px-1.5 py-0.5 text-xs text-puck-ink transition-colors hover:bg-puck-mint/12 hover:text-puck-mint-deep',
-                        type: 'button',
-                        onClick: () => void copyText(message.text),
-                      },
-                      '复制',
-                    ),
-                },
-              ],
-            })
-          : undefined,
-    }
-  })
-})
-
-const conversationItems = computed(() =>
-  conversations.value.map((conversation) => ({
-    key: conversation.id,
-    label: conversation.title || '新对话',
-    group: isToday(conversation.updatedAt) ? '今天' : '更早',
-  })),
+const conversationGroups = computed(() =>
+  [
+    {
+      label: '今天',
+      items: conversations.value.filter((conversation) => isToday(conversation.updatedAt)),
+    },
+    {
+      label: '更早',
+      items: conversations.value.filter((conversation) => !isToday(conversation.updatedAt)),
+    },
+  ].filter((group) => group.items.length > 0),
 )
-
-const creation = {
-  label: () => h('span', null, '新对话'),
-  onClick: () => newConversation(),
-}
 
 function isToday(timestamp: number): boolean {
   return new Date(timestamp).toDateString() === new Date().toDateString()
 }
 
-function conversationMenu(conversation: ConversationItemType): MenuProps {
-  return {
-    items: [{ key: 'delete', label: '删除对话', danger: true }],
-    onClick: (info) => {
-      if (info.key === 'delete') void removeConversation(String(conversation.key))
-    },
-  }
+function isMessageStreaming(message: ChatMessage): boolean {
+  return pending.value && message.id === streamingMessageId.value
+}
+
+function isReasoningStreaming(message: ChatMessage): boolean {
+  return isMessageStreaming(message) && message.reasoning.length > 0 && !message.text
 }
 
 function showToast(text: string) {
@@ -197,7 +143,7 @@ function setError(error: unknown) {
   errorText.value = text.length > 280 ? `${text.slice(0, 280)}…` : text
 }
 
-function fromStored(message: StoredMessage): Message {
+function fromStored(message: StoredMessage): ChatMessage {
   return {
     id: `h-${message.id}`,
     role: message.role === 'assistant' ? 'assistant' : 'user',
@@ -206,7 +152,7 @@ function fromStored(message: StoredMessage): Message {
   }
 }
 
-function findMessage(id: string): Message | undefined {
+function findMessage(id: string): ChatMessage | undefined {
   return messages.value.find((message) => message.id === id)
 }
 
@@ -217,19 +163,6 @@ async function refreshConversations() {
     setError(error)
   }
 }
-
-function providerLabel(provider: ProviderConfig): string {
-  const model = provider.model?.trim()
-  const name = provider.name?.trim() || provider.type || '模型'
-  return model ? `${name} · ${model}` : name
-}
-
-const providerOptions = computed(() =>
-  providers.value.map((provider) => ({
-    value: provider.id,
-    label: providerLabel(provider),
-  })),
-)
 
 async function loadProviders() {
   try {
@@ -264,10 +197,6 @@ function applyConversationProvider(conversationID: string) {
   selectedProviderId.value = activeProviderId.value || providers.value[0]?.id || ''
 }
 
-function onProviderSelect(value: unknown) {
-  selectedProviderId.value = String(value)
-}
-
 function syncRouteToConversation(id: string) {
   if (route.name !== 'chat') return
   if (route.params.id === id) return
@@ -296,7 +225,7 @@ function newConversation() {
   activeConversationId.value = ''
   messages.value = []
   errorText.value = ''
-  input.value = ''
+  composerRef.value?.clear()
   selectedProviderId.value = activeProviderId.value || providers.value[0]?.id || ''
   if (route.name === 'chat' && route.params.id) {
     void router.replace({ name: 'chat' })
@@ -313,19 +242,30 @@ async function removeConversation(id: string) {
   }
 }
 
-function usePrompt(text: string) {
-  input.value = text
+function requestDelete(conversation: ConversationRecord) {
+  deleteTarget.value = conversation
+  deleteDialogOpen.value = true
 }
 
-function onSenderChange(value: string) {
-  input.value = value
+async function confirmDelete() {
+  const target = deleteTarget.value
+  deleteDialogOpen.value = false
+  deleteTarget.value = null
+  if (target) await removeConversation(target.id)
+}
+
+function usePrompt(text: string) {
+  composerRef.value?.setText(text)
+}
+
+function updateSelectedProvider(id: string) {
+  selectedProviderId.value = id
 }
 
 async function send(textInput?: string) {
-  const text = (typeof textInput === 'string' ? textInput : input.value).trim()
+  const text = (typeof textInput === 'string' ? textInput : '').trim()
   if (!text || pending.value) return
 
-  input.value = ''
   errorText.value = ''
   pending.value = true
   const expectedActive = activeConversationId.value
@@ -455,164 +395,255 @@ onBeforeUnmount(() => {
 <template>
   <div class="flex h-full w-full flex-col">
     <header
-      class="chat-header flex items-center justify-between gap-4 border-b border-puck-line px-6 pb-2 pt-2 [-webkit-app-region:drag]"
+      class="chat-header flex items-center justify-between gap-4 border-b border-border bg-card px-5 py-2.5 [-webkit-app-region:drag]"
     >
-        <div class="flex items-center gap-3">
-          <PuckAvatar
-            class="h-8 w-8 rounded-full shadow-[0_4px_10px_rgba(53,189,152,0.35)]"
-          />
-          <div class="flex flex-col">
-            <h1 class="m-0 text-[15px] font-bold leading-5 tracking-[0.2px]">Puck</h1>
-            <p class="mb-0 mt-0 text-[11px] leading-4 text-puck-muted">住在你桌角的小伙伴</p>
-          </div>
+      <div class="flex items-center gap-3">
+        <PuckAvatar class="size-8 rounded-full shadow-sm" />
+        <div class="flex flex-col">
+          <h1 class="m-0 text-[15px] font-bold leading-5 tracking-[0.01em]">Puck</h1>
+          <p class="mb-0 mt-0 text-[11px] leading-4 text-muted-foreground">
+            住在你桌角的小伙伴
+          </p>
         </div>
-      </header>
+      </div>
+    </header>
 
-      <div class="flex min-h-0 flex-1">
-        <aside
-          class="chat-sidebar flex min-h-0 w-[218px] flex-none flex-col overflow-hidden border-r border-puck-line p-2.5"
+    <div class="flex min-h-0 flex-1">
+      <aside
+        class="chat-sidebar flex min-h-0 w-[218px] flex-none flex-col overflow-hidden border-r border-border bg-card p-2.5"
+      >
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          class="mb-2 w-full justify-start gap-2"
+          @click="newConversation"
         >
-          <Conversations
-            class="history-conversations min-h-0 flex-1"
-            :items="conversationItems"
-            :active-key="activeConversationId"
-            :on-active-change="openConversation"
-            :menu="conversationMenu"
-            :creation="creation"
-            :groupable="true"
-          />
-        </aside>
+          <PlusIcon class="size-3.5" />
+          新对话
+        </Button>
 
-        <section class="flex min-w-0 flex-1 flex-col">
-          <main class="flex min-h-0 flex-1 flex-col">
-            <div
-              v-if="messages.length === 0"
-              class="chat-welcome"
+        <ScrollArea class="min-h-0 flex-1">
+          <p
+            v-if="!conversations.length"
+            class="px-2 py-3 text-xs text-muted-foreground"
+          >
+            还没有对话
+          </p>
+          <div v-for="group in conversationGroups" :key="group.label">
+            <p
+              class="px-2 pb-1 pt-3 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground"
             >
-              <div class="welcome-hero">
-                <div class="welcome-avatar">
-                  <PuckAvatar class="h-[74px] w-[74px] rounded-full" />
-                </div>
-                <h2 class="welcome-title">和 Puck 聊点什么吧</h2>
-                <p class="welcome-desc">
-                  在设置里接入模型后就能真正对话；没有配置时使用本地回声。
-                </p>
-              </div>
-              <div class="welcome-prompts">
-                <span class="welcome-prompts-title">试试这些</span>
-                <div class="welcome-prompts-grid">
-                  <button
-                    v-for="text in suggestions"
-                    :key="text"
+              {{ group.label }}
+            </p>
+            <div
+              v-for="conversation in group.items"
+              :key="conversation.id"
+              class="chat-conversation-row group flex items-center gap-0.5"
+              :class="{
+                'chat-conversation-row--active': conversation.id === activeConversationId,
+              }"
+            >
+              <button
+                type="button"
+                class="chat-conversation-open min-w-0 flex-1 truncate rounded-lg px-2.5 py-2 text-left text-[12.5px] leading-5 transition-colors"
+                :title="conversation.title || '新对话'"
+                :aria-current="
+                  conversation.id === activeConversationId ? 'page' : undefined
+                "
+                @click="openConversation(conversation.id)"
+              >
+                {{ conversation.title || '新对话' }}
+              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <Button
                     type="button"
-                    class="welcome-prompt"
-                    @click="usePrompt(text)"
+                    variant="ghost"
+                    size="icon-xs"
+                    class="chat-conversation-menu"
+                    aria-label="对话操作"
                   >
-                    <span class="welcome-prompt-spark" aria-hidden="true">✦</span>
-                    <span class="welcome-prompt-text">{{ text }}</span>
-                    <svg
-                      class="welcome-prompt-arrow"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M5 12h14" />
-                      <path d="m13 6 6 6-6 6" />
-                    </svg>
-                  </button>
-                </div>
+                    <MoreHorizontalIcon class="size-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" class="w-36">
+                  <DropdownMenuItem
+                    class="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                    @select="requestDelete(conversation)"
+                  >
+                    <Trash2Icon class="size-3.5" />
+                    删除对话
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </ScrollArea>
+      </aside>
+
+      <section class="flex min-w-0 flex-1 flex-col">
+        <main class="flex min-h-0 flex-1 flex-col">
+          <div v-if="messages.length === 0" class="chat-welcome">
+            <div class="welcome-hero">
+              <div class="welcome-avatar">
+                <PuckAvatar class="size-[74px] rounded-full" />
+              </div>
+              <h2 class="welcome-title">和 Puck 聊点什么吧</h2>
+              <p class="welcome-desc">
+                在设置里接入模型后就能真正对话；没有配置时使用本地回声。
+              </p>
+            </div>
+            <div class="welcome-prompts">
+              <span class="welcome-prompts-title">试试这些</span>
+              <div class="welcome-prompts-grid">
+                <Suggestion
+                  v-for="text in suggestions"
+                  :key="text"
+                  :suggestion="text"
+                  class="welcome-prompt"
+                  @click="usePrompt"
+                >
+                  <span class="welcome-prompt-spark" aria-hidden="true">✦</span>
+                  <span class="welcome-prompt-text">{{ text }}</span>
+                  <svg
+                    class="welcome-prompt-arrow"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M5 12h14" />
+                    <path d="m13 6 6 6-6 6" />
+                  </svg>
+                </Suggestion>
               </div>
             </div>
-            <Bubble.List
-              v-else
-              class="bubble-list min-h-0 flex-1"
-              :items="bubbleItems"
-              :roles="roles"
-              :auto-scroll="true"
-            />
-          </main>
+          </div>
 
-          <p
-            v-if="errorText"
-            class="m-0 bg-puck-danger-soft px-6 py-2.5 text-xs text-puck-danger"
+          <Conversation
+            v-else
+            class="chat-conversation min-h-0 flex-1"
+            aria-label="聊天消息"
+            resize="instant"
           >
-            {{ errorText }}
-          </p>
-
-          <footer class="composer w-full px-6 pb-4 pt-1">
-            <Sender
-              :value="input"
-              :loading="pending"
-              placeholder="跟 Puck 说点什么…"
-              :auto-size="{ minRows: 3, maxRows: 8 }"
-              :actions="false"
-              :on-change="onSenderChange"
-              :on-submit="send"
-            >
-              <template #footer>
-                <div class="flex items-center justify-between gap-3">
-                  <Select
-                    v-if="providers.length"
-                    class="provider-select"
-                    :bordered="false"
-                    :value="selectedProviderId"
-                    :options="providerOptions"
-                    :dropdown-match-select-width="false"
-                    title="切换当前对话使用的模型"
-                    @change="onProviderSelect"
+            <ConversationContent class="chat-conversation-content gap-5 px-5 py-5">
+              <Message
+                v-for="message in messages"
+                :key="message.id"
+                :from="message.role"
+                class="chat-message"
+              >
+                <PuckAvatar
+                  v-if="message.role === 'assistant'"
+                  class="mt-0.5 size-8 flex-none rounded-full"
+                />
+                <MessageContent
+                  :class="
+                    message.role === 'user'
+                      ? 'chat-message-content chat-message-content--user'
+                      : 'chat-message-content chat-message-content--assistant'
+                  "
+                >
+                  <ChatReasoning
+                    v-if="message.role === 'assistant' && message.reasoning"
+                    :content="message.reasoning"
+                    :is-streaming="isReasoningStreaming(message)"
+                    :default-open="isMessageStreaming(message)"
                   />
-                  <span v-else class="text-xs text-puck-muted">未配置模型</span>
-                  <button
-                    type="button"
-                    class="sender-send-btn"
-                    :class="{ 'sender-send-btn-loading': pending }"
-                    :disabled="pending || !input.trim()"
-                    :title="pending ? '正在回复' : '发送'"
-                    @click="send()"
+                  <Shimmer
+                    v-if="
+                      isMessageStreaming(message) &&
+                      !message.text &&
+                      !message.reasoning
+                    "
+                    :duration="1.5"
+                    class="text-xs"
                   >
-                    <svg
-                      v-if="pending"
-                      class="h-5 w-5 animate-spin"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
+                    正在思考…
+                  </Shimmer>
+                  <div v-if="message.role === 'user'" class="whitespace-pre-wrap">
+                    {{ message.text }}
+                  </div>
+                  <MessageResponse
+                    v-else-if="message.text"
+                    :content="message.text"
+                    class="chat-message-markdown"
+                  />
+                  <MessageActions
+                    v-if="
+                      message.role === 'assistant' &&
+                      message.text &&
+                      !isMessageStreaming(message)
+                    "
+                    class="chat-message-actions"
+                  >
+                    <MessageAction
+                      tooltip="复制"
+                      label="复制"
+                      @click="copyText(message.text)"
                     >
-                      <circle class="opacity-25" cx="12" cy="12" r="9" />
-                      <path class="opacity-90" d="M21 12a9 9 0 0 0-9-9" />
-                    </svg>
-                    <svg
-                      v-else
-                      class="h-5 w-5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="M12 19V5" />
-                      <path d="m5 12 7-7 7 7" />
-                    </svg>
-                  </button>
-                </div>
-              </template>
-            </Sender>
-          </footer>
-        </section>
-      </div>
+                      <CopyIcon class="size-3.5" />
+                    </MessageAction>
+                  </MessageActions>
+                </MessageContent>
+              </Message>
+            </ConversationContent>
+            <ConversationScrollButton aria-label="滚动到底部" />
+          </Conversation>
+        </main>
 
-      <transition name="toast">
-        <div
-          v-if="toast"
-          class="pointer-events-none fixed bottom-[98px] left-1/2 z-20 -translate-x-1/2 rounded-full bg-puck-ink px-3.5 py-2 text-xs text-puck-cream"
+        <p
+          v-if="errorText"
+          class="m-0 break-words bg-puck-danger-soft px-5 py-2.5 text-xs text-puck-danger"
         >
-          {{ toast }}
-        </div>
-      </transition>
+          {{ errorText }}
+        </p>
+
+        <footer class="w-full px-5 pb-4 pt-1">
+          <ChatComposer
+            ref="composerRef"
+            :providers="providers"
+            :selected-provider-id="selectedProviderId"
+            :pending="pending"
+            @update:selectedProviderId="updateSelectedProvider"
+            @submit="send"
+            @error="setError"
+          />
+        </footer>
+      </section>
     </div>
+
+    <transition name="toast">
+      <div
+        v-if="toast"
+        class="pointer-events-none fixed bottom-[98px] left-1/2 z-20 -translate-x-1/2 rounded-full bg-foreground px-3.5 py-2 text-xs text-background"
+      >
+        {{ toast }}
+      </div>
+    </transition>
+
+    <AlertDialog v-model:open="deleteDialogOpen">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>删除这个对话？</AlertDialogTitle>
+          <AlertDialogDescription>
+            “{{ deleteTarget?.title || '新对话' }}”将永久删除，无法恢复。
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogAction
+            class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            @click="confirmDelete"
+          >
+            删除
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </div>
 </template>
