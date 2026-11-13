@@ -18,6 +18,9 @@ func buildProvider(config store.ProviderConfig, key string) (ai.Provider, string
 	if model == "" {
 		return nil, "", fmt.Errorf("请填写模型")
 	}
+	if err := validateProviderEndpoint(config); err != nil {
+		return nil, "", err
+	}
 
 	key = strings.TrimSpace(key)
 	switch providerType {

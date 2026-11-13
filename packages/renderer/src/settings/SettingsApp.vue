@@ -100,6 +100,25 @@ const deleteProviderId = ref('')
 const providers = computed(() => settings.value.providers ?? [])
 const isExisting = computed(() => providers.value.some((provider) => provider.id === draft.value.id))
 const keyPending = computed(() => apiKey.value.trim().length > 0)
+
+function normalizedEndpoint(value: string): string {
+  return value.trim().replace(/\/+$/, '')
+}
+
+const savedProvider = computed(
+  () => providers.value.find((provider) => provider.id === draft.value.id) ?? null,
+)
+const endpointChanged = computed(() => {
+  const saved = savedProvider.value
+  if (!saved) return false
+  return (
+    saved.type !== draft.value.type ||
+    normalizedEndpoint(saved.baseURL) !== normalizedEndpoint(draft.value.baseURL)
+  )
+})
+const requiresKeyReentry = computed(() =>
+  Boolean(savedProvider.value?.hasKey && !keyPending.value && endpointChanged.value),
+)
 const deleteProviderName = computed(
   () =>
     providers.value.find((provider) => provider.id === deleteProviderId.value)?.name ??
@@ -230,6 +249,10 @@ function resetModels() {
 
 async function fetchModels() {
   if (modelsLoading.value) return
+  if (requiresKeyReentry.value) {
+    modelsError.value = '修改服务地址或供应商类型后，请重新输入 API Key'
+    return
+  }
   if (draft.value.type === 'openai-compatible' && !draft.value.baseURL.trim()) {
     resetModels()
     modelsError.value = '请先填写服务地址'
@@ -303,6 +326,11 @@ function draftProvider(): ProviderConfig {
 }
 
 async function testConnection() {
+  if (requiresKeyReentry.value) {
+    testResult.value = null
+    errorText.value = '修改服务地址或供应商类型后，请重新输入 API Key'
+    return
+  }
   testing.value = true
   testResult.value = null
   errorText.value = ''
@@ -326,6 +354,10 @@ async function save() {
   }
   if (draft.value.type === 'openai-compatible' && !draft.value.baseURL.trim()) {
     errorText.value = '请填写服务地址'
+    return
+  }
+  if (requiresKeyReentry.value) {
+    errorText.value = '修改服务地址或供应商类型后，请重新输入 API Key'
     return
   }
 
@@ -695,7 +727,7 @@ onMounted(async () => {
                   type="button"
                   variant="outline"
                   class="settings-fetch-button"
-                  :disabled="modelsLoading"
+                  :disabled="modelsLoading || requiresKeyReentry"
                   @click="fetchModels"
                 >
                   <Loader2Icon v-if="modelsLoading" class="size-4 animate-spin" />
@@ -769,6 +801,10 @@ onMounted(async () => {
                 </Button>
               </div>
             </div>
+
+            <p v-if="requiresKeyReentry" class="settings-hint settings-hint--warning">
+              修改服务地址或供应商类型后，请重新输入 API Key。
+            </p>
 
             <p v-if="draft.hasKey && draft.keyMask && !keyPending" class="settings-hint">
               已保存：<code class="settings-code">{{ draft.keyMask }}</code>（留空保持不变）
@@ -865,13 +901,17 @@ onMounted(async () => {
             <Button
               type="button"
               variant="outline"
-              :disabled="testing"
+              :disabled="testing || requiresKeyReentry"
               @click="testConnection"
             >
               <Loader2Icon v-if="testing" class="size-4 animate-spin" />
               测试连接
             </Button>
-            <Button type="submit" :disabled="saving" class="settings-primary-button">
+            <Button
+              type="submit"
+              :disabled="saving || requiresKeyReentry"
+              class="settings-primary-button"
+            >
               <Loader2Icon v-if="saving" class="size-4 animate-spin" />
               {{ isExisting ? '保存供应商' : '添加供应商' }}
             </Button>

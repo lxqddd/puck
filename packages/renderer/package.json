@@ -23,6 +23,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cn": "^0.5.2",
+    "comark": "0.8.1",
     "katex": "^0.19.1",
     "motion-v": "^2.12.0",
     "nanoid": "^6.0.2",

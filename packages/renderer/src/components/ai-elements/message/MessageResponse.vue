@@ -2,10 +2,7 @@
 import type { HTMLAttributes } from 'vue'
 import { cn } from '@/lib/utils'
 import { computed, useSlots } from 'vue'
-import { Markdown } from 'vue-stream-markdown'
-import { useMarkdownExtensions } from './useMarkdownExtensions'
-import 'vue-stream-markdown/index.css'
-import 'katex/dist/katex.min.css'
+import MarkdownContent from './MarkdownContent.vue'
 
 interface Props {
   content?: string
@@ -29,14 +26,11 @@ const slotContent = computed<string | undefined>(() => {
 })
 
 const md = computed(() => (slotContent.value ?? props.content ?? '') as string)
-
-const { extensions } = useMarkdownExtensions()
 </script>
 
 <template>
-  <Markdown
+  <MarkdownContent
     :content="md"
-    :extensions="extensions"
     :class="
       cn(
         'size-full [&>*:first-child]:mt-0! [&>*:last-child]:mb-0!',

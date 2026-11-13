@@ -44,7 +44,7 @@ func DefaultPath() string {
 }
 
 func NewStore(path string) (*Store, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return nil, err
 	}
 	dsn := path + "?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)"
@@ -58,7 +58,27 @@ func NewStore(path string) (*Store, error) {
 		_ = db.Close()
 		return nil, err
 	}
+	if err := restrictStorePermissions(path); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	return store, nil
+}
+
+// restrictStorePermissions keeps the conversation database private even when
+// the parent config directory was created by an older version with 0755.
+func restrictStorePermissions(path string) error {
+	if dir := filepath.Dir(path); dir != "." && dir != "" {
+		if err := os.Chmod(dir, 0o700); err != nil {
+			return fmt.Errorf("设置历史目录权限失败: %w", err)
+		}
+	}
+	for _, name := range []string{path, path + "-wal", path + "-shm"} {
+		if err := os.Chmod(name, 0o600); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("设置历史文件权限失败: %w", err)
+		}
+	}
+	return nil
 }
 
 func (s *Store) Close() error {

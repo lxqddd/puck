@@ -78,6 +78,9 @@ importers:
       cn:
         specifier: ^0.5.2
         version: 0.5.2
+      comark:
+        specifier: 0.8.1
+        version: 0.8.1(katex@0.19.1)(shiki@4.6.0)
       katex:
         specifier: ^0.19.1
         version: 0.19.1

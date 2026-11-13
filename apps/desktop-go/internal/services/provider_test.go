@@ -28,6 +28,11 @@ func TestBuildProviderValidation(t *testing.T) {
 			config: store.ProviderConfig{Type: store.ProviderTypeOpenAI, BaseURL: "http://localhost:11434/v1", Model: "llama3"},
 		},
 		{
+			name:    "openai compatible rejects remote plain http",
+			config:  store.ProviderConfig{Type: store.ProviderTypeOpenAI, BaseURL: "http://example.com/v1", Model: "gpt"},
+			wantErr: true,
+		},
+		{
 			name:    "anthropic missing key",
 			config:  store.ProviderConfig{Type: store.ProviderTypeAnthropic, Model: "claude-opus-5-5"},
 			wantErr: true,

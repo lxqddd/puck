@@ -52,7 +52,8 @@ func main() {
 			application.NewService(settingsService),
 		},
 		Assets: application.AssetOptions{
-			Handler: application.AssetFileServerFS(assets),
+			Handler:    application.AssetFileServerFS(assets),
+			Middleware: securityHeaders,
 		},
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: false,

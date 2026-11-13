@@ -1,4 +1,4 @@
-import { Events } from '@wailsio/runtime'
+import { Browser, Events } from '@wailsio/runtime'
 import { EVENTS } from '@puck/contract'
 import type {
   BubbleShowEvent,
@@ -28,6 +28,7 @@ function subscribe<T>(name: string, callback: (data: T) => void): () => void {
 
 export const bridge = {
   openChat: () => MascotService.OpenChat(),
+  openExternal: (url: string) => Browser.OpenURL(url),
   setHitRegion: (
     region: { x: number; y: number; width: number; height: number },
     scale: number,

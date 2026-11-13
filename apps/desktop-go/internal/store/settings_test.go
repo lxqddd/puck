@@ -129,3 +129,21 @@ func TestUpdatePreservesOtherFields(t *testing.T) {
 		t.Fatalf("unexpected settings after update: %+v", settings)
 	}
 }
+
+func TestSettingsStoreRestrictsPermissions(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "puck", "settings.json")
+	store := &SettingsStore{path: path}
+	if err := store.Update(func(*Settings) {}); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+
+	for _, name := range []string{filepath.Dir(path), path} {
+		info, err := os.Stat(name)
+		if err != nil {
+			t.Fatalf("stat %s: %v", name, err)
+		}
+		if info.Mode().Perm()&0o077 != 0 {
+			t.Errorf("%s has permissions %04o; expected no group/other access", name, info.Mode().Perm())
+		}
+	}
+}

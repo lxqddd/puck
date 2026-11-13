@@ -120,8 +120,13 @@ func (s *SettingsStore) saveLocked(settings Settings) error {
 		provider.HasKey = false
 		provider.KeyMask = ""
 	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o700); err != nil {
 		return err
+	}
+	if dir := filepath.Dir(s.path); dir != "." && dir != "" {
+		if err := os.Chmod(dir, 0o700); err != nil {
+			return err
+		}
 	}
 	data, err := json.MarshalIndent(settings, "", "  ")
 	if err != nil {

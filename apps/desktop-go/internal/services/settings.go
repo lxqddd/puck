@@ -77,11 +77,24 @@ func (s *SettingsService) SaveProvider(provider store.ProviderConfig, apiKey str
 	if strings.TrimSpace(provider.Model) == "" {
 		return store.ProviderConfig{}, fmt.Errorf("请填写模型")
 	}
-	if provider.Type == store.ProviderTypeOpenAI && strings.TrimSpace(provider.BaseURL) == "" {
-		return store.ProviderConfig{}, fmt.Errorf("请填写服务地址")
+	existing, err := s.providerByID(provider.ID)
+	if err != nil {
+		return store.ProviderConfig{}, err
 	}
-	if apiKey != "" {
-		if err := s.keys.Set(provider.ID, apiKey); err != nil {
+	if existing != nil {
+		hasKey, err := s.hasStoredKey(provider.ID)
+		if err != nil {
+			return store.ProviderConfig{}, err
+		}
+		if hasKey && strings.TrimSpace(apiKey) == "" && endpointChanged(existing, provider) {
+			return store.ProviderConfig{}, fmt.Errorf("修改服务地址或供应商类型后，请重新输入 API Key")
+		}
+	}
+	if err := validateProviderEndpoint(provider); err != nil {
+		return store.ProviderConfig{}, err
+	}
+	if key := strings.TrimSpace(apiKey); key != "" {
+		if err := s.keys.Set(provider.ID, key); err != nil {
 			return store.ProviderConfig{}, err
 		}
 	}
@@ -122,6 +135,63 @@ func (s *SettingsService) SaveProvider(provider store.ProviderConfig, apiKey str
 		saved.KeyMask = ""
 	}
 	return saved, nil
+}
+
+func (s *SettingsService) providerByID(id string) (*store.ProviderConfig, error) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return nil, nil
+	}
+	settings, err := s.store.Load()
+	if err != nil {
+		return nil, err
+	}
+	for _, provider := range settings.Providers {
+		if provider.ID == id {
+			return provider, nil
+		}
+	}
+	return nil, nil
+}
+
+func (s *SettingsService) hasStoredKey(id string) (bool, error) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return false, nil
+	}
+	key, err := s.keys.Get(id)
+	if err != nil {
+		if errors.Is(err, keyring.ErrNotFound) {
+			return false, nil
+		}
+		return false, fmt.Errorf("读取系统钥匙串失败：%w", err)
+	}
+	return strings.TrimSpace(key) != "", nil
+}
+
+func (s *SettingsService) resolveProviderForRequest(provider store.ProviderConfig, apiKey string) (store.ProviderConfig, string, error) {
+	if strings.TrimSpace(apiKey) != "" {
+		return provider, strings.TrimSpace(apiKey), nil
+	}
+
+	saved, err := s.providerByID(provider.ID)
+	if err != nil {
+		return store.ProviderConfig{}, "", err
+	}
+	if saved == nil {
+		return provider, "", nil
+	}
+
+	storedKey, err := s.keys.Get(saved.ID)
+	if err != nil {
+		if !errors.Is(err, keyring.ErrNotFound) {
+			return store.ProviderConfig{}, "", fmt.Errorf("读取系统钥匙串失败：%w", err)
+		}
+		storedKey = ""
+	}
+
+	resolved, key := resolveProviderRequest(provider, saved, storedKey, apiKey)
+	return resolved, key, nil
 }
 
 // SetTheme 保存主题偏好并广播给所有窗口。
@@ -188,13 +258,12 @@ func (s *SettingsService) DeleteProvider(id string) error {
 
 // ListModels 拉取供应商的模型列表；apiKey 为空时使用已保存的 Key。
 func (s *SettingsService) ListModels(provider store.ProviderConfig, apiKey string) ([]string, error) {
-	key := strings.TrimSpace(apiKey)
-	if key == "" && strings.TrimSpace(provider.ID) != "" {
-		stored, err := s.keys.Get(strings.TrimSpace(provider.ID))
-		if err != nil && !errors.Is(err, keyring.ErrNotFound) {
-			return nil, fmt.Errorf("读取系统钥匙串失败：%w", err)
-		}
-		key = stored
+	provider, key, err := s.resolveProviderForRequest(provider, apiKey)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateProviderEndpoint(provider); err != nil {
+		return nil, err
 	}
 
 	providerType := strings.TrimSpace(provider.Type)
@@ -220,13 +289,12 @@ func (s *SettingsService) ListModels(provider store.ProviderConfig, apiKey strin
 
 // TestProvider 用当前表单内容发一条最小请求，验证地址、模型与 Key 是否可用。
 func (s *SettingsService) TestProvider(provider store.ProviderConfig, apiKey string) ProviderTestResult {
-	key := strings.TrimSpace(apiKey)
-	if key == "" && strings.TrimSpace(provider.ID) != "" {
-		stored, err := s.keys.Get(strings.TrimSpace(provider.ID))
-		if err != nil && !errors.Is(err, keyring.ErrNotFound) {
-			return ProviderTestResult{OK: false, Message: fmt.Sprintf("读取系统钥匙串失败：%v", err)}
-		}
-		key = stored
+	provider, key, err := s.resolveProviderForRequest(provider, apiKey)
+	if err != nil {
+		return ProviderTestResult{OK: false, Message: err.Error()}
+	}
+	if err := validateProviderEndpoint(provider); err != nil {
+		return ProviderTestResult{OK: false, Message: err.Error()}
 	}
 
 	chatProvider, model, err := buildProvider(provider, key)

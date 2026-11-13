@@ -3,10 +3,7 @@ import type { HTMLAttributes } from 'vue'
 import { CollapsibleContent } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
 import { computed, useSlots } from 'vue'
-import { Markdown } from 'vue-stream-markdown'
-import { useMarkdownExtensions } from '../message/useMarkdownExtensions'
-import 'vue-stream-markdown/index.css'
-import 'katex/dist/katex.min.css'
+import MarkdownContent from '../message/MarkdownContent.vue'
 
 interface Props {
   class?: HTMLAttributes['class']
@@ -30,8 +27,6 @@ const slotContent = computed<string | undefined>(() => {
 })
 
 const md = computed(() => (slotContent.value ?? props.content ?? '') as string)
-
-const { extensions } = useMarkdownExtensions()
 </script>
 
 <template>
@@ -44,6 +39,6 @@ const { extensions } = useMarkdownExtensions()
       props.class,
     )"
   >
-    <Markdown :content="md" :extensions="extensions" />
+    <MarkdownContent :content="md" />
   </CollapsibleContent>
 </template>
