@@ -127,7 +127,7 @@ func (s *ChatService) Send(text string, conversationID string, providerID string
 			}
 		}
 	}
-	if _, err := s.history.AppendMessage(conversationID, string(ai.RoleUser), text); err != nil {
+	if _, err := s.history.AppendMessage(conversationID, string(ai.RoleUser), text, ""); err != nil {
 		return SendResult{}, err
 	}
 
@@ -190,7 +190,7 @@ func (s *ChatService) run(messageID, conversationID, text, providerID string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
 	defer cancel()
 
-	var full strings.Builder
+	var full, reasoning strings.Builder
 	speaking := false
 	err := provider.Chat(ctx, ai.ChatRequest{
 		Model:        model,
@@ -199,19 +199,29 @@ func (s *ChatService) run(messageID, conversationID, text, providerID string) {
 		Tools:        tools,
 		ToolExecutor: toolExecutor,
 	}, func(event ai.ChatEvent) error {
-		if event.Type != ai.EventDelta || event.Text == "" {
+		if event.Text == "" {
 			return nil
 		}
-		if !speaking {
-			speaking = true
-			emitState("speaking")
+		switch event.Type {
+		case ai.EventReasoning:
+			reasoning.WriteString(event.Text)
+			app.Event.Emit(events.ChatReasoning, events.ChatReasoningEvent{
+				MessageID:      messageID,
+				ConversationID: conversationID,
+				Text:           event.Text,
+			})
+		case ai.EventDelta:
+			if !speaking {
+				speaking = true
+				emitState("speaking")
+			}
+			full.WriteString(event.Text)
+			app.Event.Emit(events.ChatDelta, events.ChatDeltaEvent{
+				MessageID:      messageID,
+				ConversationID: conversationID,
+				Text:           event.Text,
+			})
 		}
-		full.WriteString(event.Text)
-		app.Event.Emit(events.ChatDelta, events.ChatDeltaEvent{
-			MessageID:      messageID,
-			ConversationID: conversationID,
-			Text:           event.Text,
-		})
 		return nil
 	})
 	if err != nil {
@@ -225,6 +235,7 @@ func (s *ChatService) run(messageID, conversationID, text, providerID string) {
 	}
 
 	reply := full.String()
+	reasoningText := reasoning.String()
 	if reply == "" {
 		app.Event.Emit(events.ChatError, events.ChatErrorEvent{
 			MessageID:      messageID,
@@ -234,13 +245,14 @@ func (s *ChatService) run(messageID, conversationID, text, providerID string) {
 		emitState("idle")
 		return
 	}
-	if _, err := s.history.AppendMessage(conversationID, "assistant", reply); err != nil {
+	if _, err := s.history.AppendMessage(conversationID, "assistant", reply, reasoningText); err != nil {
 		log.Printf("puck: failed to save assistant message: %v", err)
 	}
 	app.Event.Emit(events.ChatDone, events.ChatDoneEvent{
 		MessageID:      messageID,
 		ConversationID: conversationID,
 		Text:           reply,
+		Reasoning:      reasoningText,
 	})
 	emitState("idle")
 }

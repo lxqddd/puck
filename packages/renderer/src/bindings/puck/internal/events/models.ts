@@ -16,12 +16,19 @@ export interface ChatDoneEvent {
     "messageId": string;
     "conversationId": string;
     "text": string;
+    "reasoning"?: string;
 }
 
 export interface ChatErrorEvent {
     "messageId"?: string;
     "conversationId"?: string;
     "message": string;
+}
+
+export interface ChatReasoningEvent {
+    "messageId": string;
+    "conversationId": string;
+    "text": string;
 }
 
 export interface ChatStateEvent {

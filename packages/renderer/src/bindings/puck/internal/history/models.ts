@@ -14,5 +14,6 @@ export interface Message {
     "conversationId": string;
     "role": string;
     "content": string;
+    "reasoning": string;
     "createdAt": number;
 }

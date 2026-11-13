@@ -1,5 +1,6 @@
 export const EVENTS = {
   chatDelta: 'chat:delta',
+  chatReasoning: 'chat:reasoning',
   chatDone: 'chat:done',
   chatError: 'chat:error',
   chatState: 'chat:state',
@@ -20,10 +21,17 @@ export interface ChatDeltaEvent {
   text: string
 }
 
+export interface ChatReasoningEvent {
+  messageId: string
+  conversationId: string
+  text: string
+}
+
 export interface ChatDoneEvent {
   messageId: string
   conversationId: string
   text: string
+  reasoning?: string
 }
 
 export interface ChatErrorEvent {
@@ -97,6 +105,7 @@ export interface StoredMessage {
   conversationId: string
   role: 'user' | 'assistant'
   content: string
+  reasoning?: string
   createdAt: number
 }
 

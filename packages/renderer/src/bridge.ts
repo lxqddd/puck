@@ -6,6 +6,7 @@ import type {
   ChatDeltaEvent,
   ChatDoneEvent,
   ChatErrorEvent,
+  ChatReasoningEvent,
   ChatStateEvent,
   Conversation,
   MascotScaleEvent,
@@ -75,6 +76,8 @@ export const bridge = {
   setTheme: (theme: ThemeMode) => SettingsService.SetTheme(theme),
 
   onChatDelta: (callback: (event: ChatDeltaEvent) => void) => subscribe(EVENTS.chatDelta, callback),
+  onChatReasoning: (callback: (event: ChatReasoningEvent) => void) =>
+    subscribe(EVENTS.chatReasoning, callback),
   onChatDone: (callback: (event: ChatDoneEvent) => void) => subscribe(EVENTS.chatDone, callback),
   onChatError: (callback: (event: ChatErrorEvent) => void) => subscribe(EVENTS.chatError, callback),
   onChatState: (callback: (event: ChatStateEvent) => void) => subscribe(EVENTS.chatState, callback),

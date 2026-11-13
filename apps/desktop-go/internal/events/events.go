@@ -4,6 +4,7 @@ import "github.com/wailsapp/wails/v3/pkg/application"
 
 const (
 	ChatDelta     = "chat:delta"
+	ChatReasoning = "chat:reasoning"
 	ChatDone      = "chat:done"
 	ChatError     = "chat:error"
 	ChatState     = "chat:state"
@@ -19,10 +20,17 @@ type ChatDeltaEvent struct {
 	Text           string `json:"text"`
 }
 
+type ChatReasoningEvent struct {
+	MessageID      string `json:"messageId"`
+	ConversationID string `json:"conversationId"`
+	Text           string `json:"text"`
+}
+
 type ChatDoneEvent struct {
 	MessageID      string `json:"messageId"`
 	ConversationID string `json:"conversationId"`
 	Text           string `json:"text"`
+	Reasoning      string `json:"reasoning,omitempty"`
 }
 
 type ChatErrorEvent struct {
@@ -54,6 +62,7 @@ type NavigateRouteEvent struct {
 
 func Register() {
 	application.RegisterEvent[ChatDeltaEvent](ChatDelta)
+	application.RegisterEvent[ChatReasoningEvent](ChatReasoning)
 	application.RegisterEvent[ChatDoneEvent](ChatDone)
 	application.RegisterEvent[ChatErrorEvent](ChatError)
 	application.RegisterEvent[ChatStateEvent](ChatState)

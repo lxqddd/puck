@@ -6,6 +6,7 @@ import {
   Bubble,
   Conversations,
   Sender,
+  Think,
 } from 'ant-design-x-vue'
 import type {
   BubbleItemType,
@@ -23,6 +24,7 @@ interface Message {
   id: string
   role: 'user' | 'assistant'
   text: string
+  reasoning: string
 }
 
 const conversations = ref<Conversation[]>([])
@@ -53,6 +55,20 @@ const streamingMessageId = computed(() => {
   return last && last.role === 'assistant' ? last.id : ''
 })
 
+const thinkOpen = ref<Record<string, boolean>>({})
+
+/** 思考阶段自动展开；开始输出正文后自动收起，用户手动展开的状态单独记忆 */
+function thinkingExpanded(message: Message): boolean {
+  if (pending.value && message.id === streamingMessageId.value && !message.text) {
+    return true
+  }
+  return thinkOpen.value[message.id] ?? false
+}
+
+function setThinkingExpanded(message: Message, expanded: boolean) {
+  thinkOpen.value = { ...thinkOpen.value, [message.id]: expanded }
+}
+
 const puckAvatar = h(PuckAvatar, { class: 'h-[30px] w-[30px] rounded-full' })
 
 const roles: RoleType = {
@@ -73,12 +89,31 @@ const bubbleItems = computed<BubbleItemType[]>(() => {
   const streamingId = streamingMessageId.value
   return messages.value.map((message) => {
     const isStreaming = pending.value && message.id === streamingId
+    const hasReasoning = message.role === 'assistant' && message.reasoning.length > 0
+    const thinking = isStreaming && !message.text
     return {
       key: message.id,
       role: message.role === 'assistant' ? 'ai' : 'user',
-      content: message.text,
+      content: hasReasoning
+        ? h('div', { class: 'bubble-rich' }, [
+            h(
+              Think,
+              {
+                title: thinking ? '思考中…' : '思考过程',
+                loading: thinking,
+                blink: thinking,
+                expanded: thinkingExpanded(message),
+                onExpand: (expanded: boolean) => setThinkingExpanded(message, expanded),
+              },
+              () => message.reasoning,
+            ),
+            message.text
+              ? h('div', { class: 'bubble-rich-text' }, message.text)
+              : null,
+          ])
+        : message.text,
       streaming: isStreaming,
-      loading: isStreaming && !message.text,
+      loading: thinking && !hasReasoning,
       footer:
         message.role === 'assistant' && message.text
           ? h(Actions, {
@@ -167,6 +202,7 @@ function fromStored(message: StoredMessage): Message {
     id: `h-${message.id}`,
     role: message.role === 'assistant' ? 'assistant' : 'user',
     text: message.content,
+    reasoning: message.reasoning ?? '',
   }
 }
 
@@ -294,7 +330,7 @@ async function send(textInput?: string) {
   pending.value = true
   const expectedActive = activeConversationId.value
   const epoch = viewEpoch
-  messages.value.push({ id: `local-${Date.now()}`, role: 'user', text })
+  messages.value.push({ id: `local-${Date.now()}`, role: 'user', text, reasoning: '' })
 
   try {
     const result = await bridge.sendChat(text, expectedActive, selectedProviderId.value)
@@ -307,7 +343,7 @@ async function send(textInput?: string) {
     if (route.name === 'chat' && route.params.id !== result.conversationId) {
       void router.replace({ name: 'chat', params: { id: result.conversationId } })
     }
-    messages.value.push({ id: result.messageId, role: 'assistant', text: '' })
+    messages.value.push({ id: result.messageId, role: 'assistant', text: '', reasoning: '' })
     await refreshConversations()
   } catch (error) {
     pending.value = false
@@ -327,6 +363,12 @@ onMounted(async () => {
       if (!message) return
       message.text += event.text
     }),
+    bridge.onChatReasoning((event) => {
+      if (event.conversationId !== activeConversationId.value) return
+      const message = findMessage(event.messageId)
+      if (!message) return
+      message.reasoning += event.text
+    }),
     bridge.onChatDone((event) => {
       if (event.messageId === pendingMessageId) {
         pending.value = false
@@ -343,6 +385,7 @@ onMounted(async () => {
         return
       }
       if (event.text) message.text = event.text
+      if (event.reasoning) message.reasoning = event.reasoning
       void refreshConversations()
     }),
     bridge.onChatError((event) => {

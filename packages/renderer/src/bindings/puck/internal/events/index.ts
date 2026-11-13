@@ -6,6 +6,7 @@ export type {
     ChatDeltaEvent,
     ChatDoneEvent,
     ChatErrorEvent,
+    ChatReasoningEvent,
     ChatStateEvent,
     MascotScaleEvent,
     NavigateRouteEvent,

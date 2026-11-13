@@ -29,6 +29,11 @@ export const ChatDone = "chat:done";
 export const ChatError = "chat:error";
 
 /**
+ * Name of the custom event "chat:reasoning".
+ */
+export const ChatReasoning = "chat:reasoning";
+
+/**
  * Name of the custom event "chat:state".
  */
 export const ChatState = "chat:state";

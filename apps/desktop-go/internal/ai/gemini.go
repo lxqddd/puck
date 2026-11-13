@@ -47,12 +47,22 @@ func (p *GeminiProvider) Chat(ctx context.Context, req ChatRequest, onEvent func
 		if err != nil {
 			return fmt.Errorf("gemini stream: %w", err)
 		}
-		text := response.Text()
-		if text == "" {
-			continue
-		}
-		if err := onEvent(ChatEvent{Type: EventDelta, Text: text}); err != nil {
-			return err
+		for _, candidate := range response.Candidates {
+			if candidate == nil || candidate.Content == nil {
+				continue
+			}
+			for _, part := range candidate.Content.Parts {
+				if part == nil || part.Text == "" {
+					continue
+				}
+				eventType := EventDelta
+				if part.Thought {
+					eventType = EventReasoning
+				}
+				if err := onEvent(ChatEvent{Type: eventType, Text: part.Text}); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil

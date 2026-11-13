@@ -16,6 +16,7 @@ declare module "@wailsio/runtime" {
             "chat:delta": events$0.ChatDeltaEvent;
             "chat:done": events$0.ChatDoneEvent;
             "chat:error": events$0.ChatErrorEvent;
+            "chat:reasoning": events$0.ChatReasoningEvent;
             "chat:state": events$0.ChatStateEvent;
             "mascot:scale": events$0.MascotScaleEvent;
             "navigate:route": events$0.NavigateRouteEvent;

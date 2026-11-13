@@ -26,10 +26,10 @@ func TestConversationLifecycle(t *testing.T) {
 		t.Fatal("expected a title")
 	}
 
-	if _, err := store.AppendMessage(conversation.ID, "user", "你好"); err != nil {
+	if _, err := store.AppendMessage(conversation.ID, "user", "你好", ""); err != nil {
 		t.Fatalf("AppendMessage user: %v", err)
 	}
-	if _, err := store.AppendMessage(conversation.ID, "assistant", "在呢"); err != nil {
+	if _, err := store.AppendMessage(conversation.ID, "assistant", "在呢", "先想想怎么回应"); err != nil {
 		t.Fatalf("AppendMessage assistant: %v", err)
 	}
 
@@ -39,6 +39,9 @@ func TestConversationLifecycle(t *testing.T) {
 	}
 	if len(messages) != 2 || messages[0].Role != "user" || messages[1].Role != "assistant" {
 		t.Fatalf("unexpected messages: %+v", messages)
+	}
+	if messages[1].Reasoning != "先想想怎么回应" {
+		t.Fatalf("reasoning not persisted: %+v", messages[1])
 	}
 
 	conversations, err := store.ListConversations(10)
@@ -68,7 +71,7 @@ func TestGetMessagesOrdersChronologicallyAndLimits(t *testing.T) {
 		t.Fatalf("CreateConversation: %v", err)
 	}
 	for _, content := range []string{"一", "二", "三", "四"} {
-		if _, err := store.AppendMessage(conversation.ID, "user", content); err != nil {
+		if _, err := store.AppendMessage(conversation.ID, "user", content, ""); err != nil {
 			t.Fatalf("AppendMessage %s: %v", content, err)
 		}
 	}

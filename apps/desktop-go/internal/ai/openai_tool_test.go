@@ -75,6 +75,41 @@ func TestOpenAICompatibleToolLoop(t *testing.T) {
 	}
 }
 
+func TestOpenAICompatibleReasoningStream(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"先分析\"}}]}\n\n")
+		fmt.Fprint(w, "data: {\"choices\":[{\"delta\":{\"reasoning\":\"一下\"}}]}\n\n")
+		fmt.Fprint(w, "data: {\"choices\":[{\"delta\":{\"content\":\"最终回答\"}}]}\n\n")
+		fmt.Fprint(w, "data: [DONE]\n\n")
+	}))
+	defer server.Close()
+
+	provider := &OpenAICompatible{BaseURL: server.URL}
+	var reasoning, reply strings.Builder
+	err := provider.Chat(context.Background(), ChatRequest{
+		Model:    "deepseek-reasoner",
+		Messages: []Message{{Role: RoleUser, Content: "你好"}},
+	}, func(event ChatEvent) error {
+		switch event.Type {
+		case EventReasoning:
+			reasoning.WriteString(event.Text)
+		case EventDelta:
+			reply.WriteString(event.Text)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("Chat: %v", err)
+	}
+	if reasoning.String() != "先分析一下" {
+		t.Fatalf("reasoning = %q", reasoning.String())
+	}
+	if reply.String() != "最终回答" {
+		t.Fatalf("reply = %q", reply.String())
+	}
+}
+
 func truncateForTest(value string, limit int) string {
 	if len(value) <= limit {
 		return value

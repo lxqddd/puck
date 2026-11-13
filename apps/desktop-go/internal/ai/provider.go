@@ -50,7 +50,8 @@ type ChatRequest struct {
 type EventType string
 
 const (
-	EventDelta EventType = "delta"
+	EventDelta     EventType = "delta"
+	EventReasoning EventType = "reasoning"
 )
 
 type ChatEvent struct {

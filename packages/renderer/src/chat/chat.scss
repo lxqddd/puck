@@ -319,9 +319,55 @@ html.dark {
     opacity: 1;
   }
 
+  .bubble-rich {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .bubble-rich-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
   .ant-think {
+    width: 100%;
+    min-width: 220px;
+    overflow: hidden;
+    border: 1px solid var(--puck-line);
     border-radius: 10px;
-    background: var(--puck-surface);
+    background: color-mix(in srgb, var(--puck-mint) 5%, var(--puck-surface-soft));
+    font-size: 12px;
+  }
+
+  .ant-think-status-wrapper {
+    padding: 7px 12px;
+    cursor: pointer;
+  }
+
+  .ant-think-status-icon {
+    color: var(--puck-mint-deep);
+  }
+
+  .ant-think-status-text {
+    color: var(--puck-muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .ant-think-status-down-icon {
+    color: var(--puck-muted);
+  }
+
+  .ant-think-content {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 0 12px 10px;
+    color: var(--puck-muted);
+    font-size: 12px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
   }
 }
 
@@ -335,10 +381,6 @@ html.dark .bubble-list {
     background: linear-gradient(160deg, #7be8c8, #40c39f);
     color: #10241d;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
-  }
-
-  .ant-think {
-    border: 1px solid var(--puck-line);
   }
 }
 

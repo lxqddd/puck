@@ -27,6 +27,7 @@ type Message struct {
 	ConversationID string `json:"conversationId"`
 	Role           string `json:"role"`
 	Content        string `json:"content"`
+	Reasoning      string `json:"reasoning"`
 	CreatedAt      int64  `json:"createdAt"`
 }
 
@@ -75,6 +76,9 @@ CREATE TABLE IF NOT EXISTS conversations (
 		return err
 	}
 	if err := s.ensureMessagesSchema(); err != nil {
+		return err
+	}
+	if err := s.ensureMessagesReasoningColumn(); err != nil {
 		return err
 	}
 	if err := s.ensureConversationProviderColumn(); err != nil {
@@ -170,8 +174,41 @@ CREATE TABLE messages (
   conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
   role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
   content TEXT NOT NULL,
+  reasoning TEXT NOT NULL DEFAULT '',
   created_at INTEGER NOT NULL
 );`
+
+// ensureMessagesReasoningColumn 为旧库补上推理内容列，已有则跳过。
+func (s *Store) ensureMessagesReasoningColumn() error {
+	rows, err := s.db.Query(`PRAGMA table_info(messages)`)
+	if err != nil {
+		return err
+	}
+	exists := false
+	for rows.Next() {
+		var (
+			columnID   int
+			name       string
+			columnType string
+			notNull    int
+			defaultVal any
+			primaryKey int
+		)
+		if err := rows.Scan(&columnID, &name, &columnType, &notNull, &defaultVal, &primaryKey); err != nil {
+			rows.Close()
+			return err
+		}
+		if name == "reasoning" {
+			exists = true
+		}
+	}
+	rows.Close()
+	if exists {
+		return nil
+	}
+	_, err = s.db.Exec(`ALTER TABLE messages ADD COLUMN reasoning TEXT NOT NULL DEFAULT ''`)
+	return err
+}
 
 func (s *Store) createMessagesTable() error {
 	_, err := s.db.Exec(createMessagesTableSQL)
@@ -250,7 +287,7 @@ func (s *Store) GetMessages(conversationID string, limit int) ([]Message, error)
 		limit = 200
 	}
 	rows, err := s.db.Query(
-		`SELECT id, conversation_id, role, content, created_at
+		`SELECT id, conversation_id, role, content, reasoning, created_at
 		 FROM messages WHERE conversation_id = ? ORDER BY id DESC LIMIT ?`,
 		conversationID, limit,
 	)
@@ -262,7 +299,7 @@ func (s *Store) GetMessages(conversationID string, limit int) ([]Message, error)
 	messages := make([]Message, 0, limit)
 	for rows.Next() {
 		var message Message
-		if err := rows.Scan(&message.ID, &message.ConversationID, &message.Role, &message.Content, &message.CreatedAt); err != nil {
+		if err := rows.Scan(&message.ID, &message.ConversationID, &message.Role, &message.Content, &message.Reasoning, &message.CreatedAt); err != nil {
 			return nil, err
 		}
 		messages = append(messages, message)
@@ -276,11 +313,11 @@ func (s *Store) GetMessages(conversationID string, limit int) ([]Message, error)
 	return messages, nil
 }
 
-func (s *Store) AppendMessage(conversationID, role, content string) (Message, error) {
+func (s *Store) AppendMessage(conversationID, role, content, reasoning string) (Message, error) {
 	now := time.Now().UnixMilli()
 	result, err := s.db.Exec(
-		`INSERT INTO messages(conversation_id, role, content, created_at) VALUES(?,?,?,?)`,
-		conversationID, role, content, now,
+		`INSERT INTO messages(conversation_id, role, content, reasoning, created_at) VALUES(?,?,?,?,?)`,
+		conversationID, role, content, reasoning, now,
 	)
 	if err != nil {
 		return Message{}, err
@@ -297,6 +334,7 @@ func (s *Store) AppendMessage(conversationID, role, content string) (Message, er
 		ConversationID: conversationID,
 		Role:           role,
 		Content:        content,
+		Reasoning:      reasoning,
 		CreatedAt:      now,
 	}, nil
 }

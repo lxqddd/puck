@@ -156,8 +156,10 @@ func (p *OpenAICompatible) streamOnce(
 		var chunk struct {
 			Choices []struct {
 				Delta struct {
-					Content   string `json:"content"`
-					ToolCalls []struct {
+					Content          string          `json:"content"`
+					ReasoningContent string          `json:"reasoning_content"`
+					Reasoning        json.RawMessage `json:"reasoning"`
+					ToolCalls        []struct {
 						Index    int    `json:"index"`
 						ID       string `json:"id"`
 						Type     string `json:"type"`
@@ -173,6 +175,11 @@ func (p *OpenAICompatible) streamOnce(
 			continue
 		}
 		for _, choice := range chunk.Choices {
+			if reasoning := reasoningDelta(choice.Delta.ReasoningContent, choice.Delta.Reasoning); reasoning != "" {
+				if err := onEvent(ChatEvent{Type: EventReasoning, Text: reasoning}); err != nil {
+					return "", nil, err
+				}
+			}
 			if choice.Delta.Content != "" {
 				content.WriteString(choice.Delta.Content)
 				if err := onEvent(ChatEvent{Type: EventDelta, Text: choice.Delta.Content}); err != nil {
@@ -219,6 +226,22 @@ func (p *OpenAICompatible) streamOnce(
 		calls = append(calls, state.call)
 	}
 	return content.String(), calls, nil
+}
+
+// reasoningDelta 归一化不同兼容端点的推理字段（DeepSeek 的 reasoning_content、
+// OpenRouter 的 reasoning），返回本次增量文本。
+func reasoningDelta(reasoningContent string, raw json.RawMessage) string {
+	if reasoningContent != "" {
+		return reasoningContent
+	}
+	if len(raw) == 0 {
+		return ""
+	}
+	var text string
+	if err := json.Unmarshal(raw, &text); err != nil {
+		return ""
+	}
+	return text
 }
 
 func toolPayload(tools []ToolDefinition) []map[string]any {
