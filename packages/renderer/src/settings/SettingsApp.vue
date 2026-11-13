@@ -20,6 +20,13 @@ import {
 import { bridge } from '../bridge'
 import PuckAvatar from '../shared/PuckAvatar.vue'
 import { useTheme } from '../shared/theme'
+import {
+  matchPreset,
+  presetToDraft,
+  providerPresetGroups,
+  providerPresets,
+} from './providerPresets'
+import type { ProviderPreset } from './providerPresets'
 
 interface Draft {
   id: string
@@ -66,6 +73,25 @@ const modelsError = ref('')
 const providers = computed(() => settings.value.providers ?? [])
 const isExisting = computed(() => providers.value.some((provider) => provider.id === draft.value.id))
 const keyPending = computed(() => apiKey.value.trim().length > 0)
+
+const pickingPreset = ref(false)
+const presetQuery = ref('')
+const activePresetId = ref('')
+
+const activePreset = computed(
+  () => providerPresets.find((preset) => preset.id === activePresetId.value) ?? null,
+)
+
+const filteredPresetGroups = computed(() =>
+  providerPresetGroups
+    .map((group) => ({
+      ...group,
+      presets: providerPresets.filter(
+        (preset) => preset.group === group.id && matchPreset(preset, presetQuery.value),
+      ),
+    }))
+    .filter((group) => group.presets.length > 0),
+)
 
 const DEFAULT_MODELS: Record<string, string> = {
   'openai-compatible': 'deepseek-chat',
@@ -121,6 +147,8 @@ function edit(provider: ProviderConfig) {
   apiKey.value = ''
   errorText.value = ''
   testResult.value = null
+  pickingPreset.value = false
+  activePresetId.value = ''
   resetModels()
 }
 
@@ -130,6 +158,30 @@ function addProvider() {
   errorText.value = ''
   testResult.value = null
   resetModels()
+}
+
+/** 「＋ 添加」：先进入预设选择，选中后再填表单（参考 cc-switch 的两步流程） */
+function startAdd() {
+  addProvider()
+  pickingPreset.value = true
+  presetQuery.value = ''
+  activePresetId.value = ''
+}
+
+function pickPreset(preset: ProviderPreset) {
+  draft.value = { ...emptyDraft(), ...presetToDraft(preset) }
+  apiKey.value = ''
+  errorText.value = ''
+  testResult.value = null
+  resetModels()
+  activePresetId.value = preset.id
+  pickingPreset.value = false
+}
+
+function chooseCustom() {
+  addProvider()
+  activePresetId.value = 'custom'
+  pickingPreset.value = false
 }
 
 let modelsRequestId = 0
@@ -192,7 +244,7 @@ async function load() {
   if (active) {
     edit(active)
   } else {
-    addProvider()
+    startAdd()
   }
 }
 
@@ -318,7 +370,7 @@ onMounted(async () => {
           <div class="settings-rail-head">
             <span class="settings-rail-title">供应商</span>
             <span class="settings-rail-count">{{ providers.length }}</span>
-            <Button size="small" class="settings-add-button" @click="addProvider">
+            <Button size="small" class="settings-add-button" @click="startAdd">
               ＋ 添加
             </Button>
           </div>
@@ -372,13 +424,114 @@ onMounted(async () => {
           </Empty>
         </aside>
 
+        <div v-if="pickingPreset" class="settings-picker">
+          <header class="settings-picker-head">
+            <h2 class="settings-picker-title">添加供应商</h2>
+            <p class="settings-picker-desc">从预设快速开始，服务地址和默认模型会自动填好</p>
+          </header>
+
+          <Input
+            v-model:value="presetQuery"
+            class="settings-picker-search"
+            placeholder="搜索供应商，如 DeepSeek、Kimi、本地…"
+            allow-clear
+            autocomplete="off"
+          >
+            <template #prefix>
+              <svg
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-3.5-3.5" />
+              </svg>
+            </template>
+          </Input>
+
+          <button type="button" class="preset-card preset-card--custom" @click="chooseCustom">
+            <span class="preset-badge preset-badge--custom" aria-hidden="true">＋</span>
+            <span class="preset-meta">
+              <span class="preset-name">自定义配置</span>
+              <span class="preset-domain">手动填写全部字段</span>
+            </span>
+          </button>
+
+          <div v-if="filteredPresetGroups.length === 0" class="settings-picker-empty">
+            <p class="settings-picker-empty-title">没有匹配的供应商</p>
+            <p class="settings-picker-empty-desc">换个关键词试试，或直接使用自定义配置。</p>
+          </div>
+
+          <section v-for="group in filteredPresetGroups" :key="group.id" class="preset-group">
+            <h3 class="preset-group-title">{{ group.label }}</h3>
+            <div class="preset-grid">
+              <button
+                v-for="preset in group.presets"
+                :key="preset.id"
+                type="button"
+                class="preset-card"
+                @click="pickPreset(preset)"
+              >
+                <span
+                  class="preset-badge"
+                  :style="{ '--preset-color': preset.color }"
+                  aria-hidden="true"
+                >
+                  {{ preset.name.slice(0, 1) }}
+                </span>
+                <span class="preset-meta">
+                  <span class="preset-name">{{ preset.name }}</span>
+                  <span class="preset-domain">{{ preset.description }}</span>
+                </span>
+              </button>
+            </div>
+          </section>
+        </div>
+
         <Form
+          v-else
           :model="draft"
           layout="vertical"
           class="settings-form min-w-0 flex-1"
           @finish="save"
         >
           <div class="settings-scroll">
+            <div v-if="!draft.id && activePresetId" class="preset-bar">
+              <template v-if="activePreset">
+                <span
+                  class="preset-badge"
+                  :style="{ '--preset-color': activePreset.color }"
+                  aria-hidden="true"
+                >
+                  {{ activePreset.name.slice(0, 1) }}
+                </span>
+                <span class="preset-bar-meta">
+                  <span class="preset-bar-name">{{ activePreset.name }}</span>
+                  <span class="preset-bar-domain">
+                    {{ activePreset.baseURL || activePreset.domain }}
+                  </span>
+                </span>
+              </template>
+              <template v-else>
+                <span class="preset-badge preset-badge--custom" aria-hidden="true">＋</span>
+                <span class="preset-bar-meta">
+                  <span class="preset-bar-name">自定义配置</span>
+                  <span class="preset-bar-domain">手动填写全部字段</span>
+                </span>
+              </template>
+              <Button
+                size="small"
+                class="settings-secondary-button"
+                @click="pickingPreset = true"
+              >
+                更换
+              </Button>
+            </div>
+
             <section class="settings-section">
               <header class="settings-section-head">
                 <span class="settings-section-icon" aria-hidden="true">

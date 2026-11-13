@@ -446,3 +446,222 @@ html.dark .settings-actionbar {
   margin-top: 12px;
   margin-bottom: 0;
 }
+
+/* ---------- 添加供应商：预设选择 ---------- */
+
+.settings-picker {
+  min-width: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: 22px 24px 24px;
+  animation: settings-picker-in 0.28s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes settings-picker-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-picker {
+    animation: none;
+  }
+}
+
+.settings-picker-head {
+  margin-bottom: 14px;
+}
+
+.settings-picker-title {
+  margin: 0;
+  color: var(--puck-ink);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.settings-picker-desc {
+  margin: 2px 0 0;
+  color: var(--puck-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.settings-picker-search {
+  margin-bottom: 14px;
+
+  .ant-input-prefix {
+    color: var(--puck-muted);
+  }
+}
+
+.preset-card {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--puck-line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--puck-surface) 84%, transparent);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: color-mix(in srgb, var(--puck-mint) 45%, transparent);
+    background: color-mix(in srgb, var(--puck-mint) 8%, var(--puck-surface));
+    box-shadow: 0 6px 16px rgba(23, 52, 45, 0.07);
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--puck-mint) 55%, transparent);
+    outline-offset: 2px;
+  }
+}
+
+.preset-card--custom {
+  margin-bottom: 16px;
+  border-style: dashed;
+  background: transparent;
+
+  &:hover {
+    background: color-mix(in srgb, var(--puck-mint) 6%, transparent);
+  }
+}
+
+.preset-badge {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--preset-color, var(--puck-mint)) 16%, transparent);
+  color: var(--preset-color, var(--puck-mint-deep));
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.preset-badge--custom {
+  --preset-color: var(--puck-mint-deep);
+
+  background: color-mix(in srgb, var(--puck-mint) 10%, transparent);
+  font-weight: 600;
+}
+
+.preset-meta {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.preset-name {
+  overflow: hidden;
+  color: var(--puck-ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preset-domain {
+  overflow: hidden;
+  color: var(--puck-muted);
+  font-size: 11px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preset-group {
+  margin-bottom: 16px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.preset-group-title {
+  margin: 0 0 8px 2px;
+  color: var(--puck-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.settings-picker-empty {
+  padding: 24px 0 16px;
+  text-align: center;
+}
+
+.settings-picker-empty-title {
+  margin: 0;
+  color: var(--puck-ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.settings-picker-empty-desc {
+  margin: 4px 0 0;
+  color: var(--puck-muted);
+  font-size: 11.5px;
+}
+
+.preset-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 9px 12px;
+  border: 1px solid color-mix(in srgb, var(--puck-mint) 30%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--puck-mint) 7%, transparent);
+}
+
+.preset-bar-meta {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.preset-bar-name {
+  color: var(--puck-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.preset-bar-domain {
+  overflow: hidden;
+  color: var(--puck-muted);
+  font-size: 11px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
