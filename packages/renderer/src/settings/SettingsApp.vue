@@ -236,6 +236,12 @@ function onTypeChange(value: unknown) {
   }
 }
 
+function toggleWebSearchFromLabel(event: MouseEvent) {
+  const target = event.target as HTMLElement | null
+  if (target?.closest('.ant-switch')) return
+  draft.value.webSearch = !draft.value.webSearch
+}
+
 async function load() {
   settings.value = await bridge.getSettings()
   const active =
@@ -554,24 +560,41 @@ onMounted(async () => {
               </header>
 
               <div class="settings-grid-2">
-                <Form.Item label="名称">
-                  <Input v-model:value="draft.name" placeholder="例如 DeepSeek" autocomplete="off" />
+                <Form.Item label="名称" html-for="settings-name">
+                  <Input
+                    id="settings-name"
+                    v-model:value="draft.name"
+                    placeholder="例如 DeepSeek"
+                    autocomplete="off"
+                  />
                 </Form.Item>
-                <Form.Item label="类型">
-                  <Select v-model:value="draft.type" :options="typeOptions" @change="onTypeChange" />
+                <Form.Item label="类型" html-for="settings-type">
+                  <Select
+                    id="settings-type"
+                    v-model:value="draft.type"
+                    :options="typeOptions"
+                    @change="onTypeChange"
+                  />
                 </Form.Item>
               </div>
 
-              <Form.Item v-if="draft.type === 'openai-compatible'" label="服务地址" required>
+              <Form.Item
+                v-if="draft.type === 'openai-compatible'"
+                label="服务地址"
+                html-for="settings-base-url"
+                required
+              >
                 <Input
+                  id="settings-base-url"
                   v-model:value="draft.baseURL"
                   placeholder="https://api.deepseek.com/v1"
                   autocomplete="off"
                   @change="resetModels"
                 />
               </Form.Item>
-              <Form.Item v-else label="自定义地址（可选）">
+              <Form.Item v-else label="自定义地址（可选）" html-for="settings-base-url">
                 <Input
+                  id="settings-base-url"
                   v-model:value="draft.baseURL"
                   :placeholder="
                     draft.type === 'gemini'
@@ -605,9 +628,10 @@ onMounted(async () => {
                 </div>
               </header>
 
-              <Form.Item label="模型" required>
+              <Form.Item label="模型" html-for="settings-model" required>
                 <div class="flex items-center gap-2.5">
                   <Input
+                    id="settings-model"
                     v-model:value="draft.model"
                     class="min-w-0 flex-1"
                     :placeholder="modelPlaceholder"
@@ -619,12 +643,13 @@ onMounted(async () => {
                 </div>
               </Form.Item>
 
-              <Form.Item v-if="models.length > 0">
+              <Form.Item v-if="models.length > 0" html-for="settings-model-list">
                 <template #label>
                   <span>可选模型</span>
                   <Tag color="success" class="ml-1.5">{{ models.length }} 个</Tag>
                 </template>
                 <Select
+                  id="settings-model-list"
                   v-model:value="draft.model"
                   :options="modelOptions"
                   show-search
@@ -658,12 +683,13 @@ onMounted(async () => {
                 </div>
               </header>
 
-              <Form.Item>
+              <Form.Item html-for="settings-api-key">
                 <template #label>
                   <span>API Key</span>
                   <Tag v-if="draft.hasKey" color="success" class="ml-1.5">已保存</Tag>
                 </template>
                 <Input.Password
+                  id="settings-api-key"
                   v-model:value="apiKey"
                   :placeholder="draft.hasKey ? '留空保持不变' : 'sk-…'"
                   autocomplete="off"
@@ -714,8 +740,8 @@ onMounted(async () => {
                 </div>
               </header>
 
-              <div class="settings-switch-row">
-                <Switch v-model:checked="draft.webSearch" />
+              <div class="settings-switch-row" @click="toggleWebSearchFromLabel">
+                <Switch v-model:checked="draft.webSearch" aria-label="允许联网搜索" />
                 <div class="min-w-0">
                   <div class="settings-switch-title">允许联网搜索（模型自动调用）</div>
                   <Typography.Text
